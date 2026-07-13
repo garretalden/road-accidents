@@ -1,0 +1,37 @@
+# Data files (too large / restricted)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.python-version.local
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editors
+.vscode/
+.idea/
+.DS_Store
+.claude/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# uv
+.uv/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Random Forest artifact is ~290 MB (150 deep trees) — exceeds GitHub's
+# per-file limit. Regenerate locally with `make train`.
+models/rf.joblib
