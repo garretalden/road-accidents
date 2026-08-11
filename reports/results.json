@@ -39,7 +39,7 @@
       "lr__C": 1
     },
     "best_cv_score": 0.39368368943393495,
-    "train_time_seconds": 25.0
+    "train_time_seconds": 16.4
   },
   {
     "name": "Random Forest",
@@ -85,7 +85,7 @@
       "class_weight": "balanced"
     },
     "best_cv_score": 0.44399842065076506,
-    "train_time_seconds": 125.7
+    "train_time_seconds": 99.9
   },
   {
     "name": "XGBoost",
@@ -132,6 +132,6 @@
       "colsample_bytree": 1.0
     },
     "best_cv_score": 0.4144463891967016,
-    "train_time_seconds": 72.6
+    "train_time_seconds": 44.9
   }
 ]

@@ -6,8 +6,14 @@ encoders from training so single-row inference matches the training pipeline.
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
+
+# pyarrow's default (jemalloc) memory pool segfaults if first touched from a
+# background thread, which is exactly what Streamlit's ScriptRunner does when
+# rendering a DataFrame/chart. Forcing the system allocator avoids the crash.
+os.environ.setdefault("ARROW_DEFAULT_MEMORY_POOL", "system")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
