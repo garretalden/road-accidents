@@ -1,11 +1,10 @@
-"""Model training routines for Logistic Regression, Random Forest, XGBoost.
+"""Model training routines for the original class-project baseline:
+Logistic Regression, Random Forest, XGBoost.
 
 Each ``train_*`` function accepts already-preprocessed training data and
-returns ``(fitted_estimator, best_params, best_cv_score)``.
+returns a ``TrainResult`` (fitted estimator, best hyperparameters, best CV
+score).
 """
-
-from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -16,14 +15,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
-from .config import RANDOM_STATE
-
-
-@dataclass
-class TrainResult:
-    estimator: Any
-    best_params: dict
-    best_cv_score: float
+from road_accidents.config import RANDOM_STATE
+from road_accidents.training import TrainResult
 
 
 def train_lr(X_train: pd.DataFrame, y_train: np.ndarray) -> TrainResult:

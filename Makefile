@@ -1,4 +1,4 @@
-.PHONY: setup data prepare train figures app all test clean
+.PHONY: setup data prepare train train-baseline experiment figures app all test clean
 
 setup:
 	uv sync
@@ -9,8 +9,13 @@ data:
 prepare:
 	uv run python scripts/prepare_data.py
 
-train:
-	uv run python scripts/train_models.py
+train: train-baseline
+
+train-baseline:
+	uv run python scripts/train_baseline.py
+
+experiment:
+	uv run python scripts/train_experiment.py $(NAME)
 
 figures:
 	uv run python scripts/make_figures.py
@@ -24,4 +29,5 @@ test:
 all: prepare train figures
 
 clean:
-	rm -rf data/processed/*.parquet models/*.joblib reports/figures/*.png reports/results.json
+	rm -rf data/processed/*.parquet models/baseline/*.joblib models/experiments/*.joblib \
+		reports/figures/*.png reports/baseline_results.json reports/experiments_results.json

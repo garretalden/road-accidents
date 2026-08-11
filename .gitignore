@@ -34,4 +34,4 @@ htmlcov/
 
 # Random Forest artifact is ~290 MB (150 deep trees) — exceeds GitHub's
 # per-file limit. Regenerate locally with `make train`.
-models/rf.joblib
+models/baseline/rf.joblib

@@ -9,6 +9,8 @@ DATA_DIR = PROJECT_ROOT / "data"
 RAW_CSV_PATH = DATA_DIR / "raw" / "UK_Accident.csv"
 PROCESSED_DIR = DATA_DIR / "processed"
 MODELS_DIR = PROJECT_ROOT / "models"
+BASELINE_MODELS_DIR = MODELS_DIR / "baseline"
+EXPERIMENTS_MODELS_DIR = MODELS_DIR / "experiments"
 REPORTS_DIR = PROJECT_ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"
 

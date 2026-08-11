@@ -30,7 +30,7 @@ Fatal is dismal across the board — that's the story below in *What I'd do next
 <!-- END RESULTS TABLE -->
 
 Detailed JSON with per-class precision/recall/F1, confusion matrices, and
-selected hyperparameters is in `reports/results.json`.
+selected hyperparameters is in `reports/baseline_results.json`.
 
 ### Feature importance (XGBoost, Fatal class)
 
@@ -61,15 +61,31 @@ macOS note: XGBoost needs OpenMP — `brew install libomp`.
 ## Layout
 
 ```
-src/road_accidents/   # reusable functions (data, features, encoding, models, viz, evaluate)
-scripts/              # thin ordered pipeline (download, prepare, train, make_figures)
+src/road_accidents/   # reusable, model-agnostic functions (data, features, encoding, viz, evaluate, training)
+baseline/             # the original 3 class-project models (fixed reference point)
+experiments/          # new models — see "Adding a new experiment" below
+scripts/              # thin ordered pipeline (download, prepare, train_baseline, train_experiment, make_figures)
 app.py                # Streamlit demo — pick conditions, see predicted probabilities
 notebooks/            # narrative walk-through (imports from src/)
 tests/                # pytest suite for features + encoding
 data/                 # raw/ (gitignored, 450 MB) and processed/ parquet artifacts
-models/               # trained joblib files + fitted encoders (small; committed)
+models/               # fitted encoders + baseline/ and experiments/ joblib files (small ones committed)
 reports/figures/      # PNGs referenced above
 ```
+
+### Adding a new experiment
+
+Copy `experiments/_template.py` to `experiments/<your_module>.py`, fill in
+`NAME`, `SLUG`, and `train()`, then run:
+
+```bash
+make experiment NAME=<your_module>
+```
+
+This trains on the same preprocessed data and test split as baseline, saves
+the model to `models/experiments/<SLUG>.joblib`, and upserts the result into
+`reports/experiments_results.json` — it never touches
+`reports/baseline_results.json`.
 
 ## What I'd do next
 

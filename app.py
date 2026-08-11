@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from road_accidents.config import CLASS_NAMES, MODELS_DIR, RUSH_HOURS, SEASON_MAP
+from road_accidents.config import BASELINE_MODELS_DIR, CLASS_NAMES, MODELS_DIR, RUSH_HOURS, SEASON_MAP
 from road_accidents.encoding import FittedEncoders, transform_row
 
 st.set_page_config(page_title="UK Accident Severity Predictor", page_icon=None, layout="centered")
@@ -30,7 +30,7 @@ st.set_page_config(page_title="UK Accident Severity Predictor", page_icon=None, 
 
 @st.cache_resource
 def load_artifacts() -> tuple[object, FittedEncoders]:
-    model = joblib.load(MODELS_DIR / "xgb.joblib")
+    model = joblib.load(BASELINE_MODELS_DIR / "xgb.joblib")
     encoders: FittedEncoders = joblib.load(MODELS_DIR / "encoders.joblib")
     return model, encoders
 

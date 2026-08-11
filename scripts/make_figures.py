@@ -11,7 +11,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import joblib
 import pandas as pd
 
-from road_accidents.config import FIGURES_DIR, MODELS_DIR, PROCESSED_DIR, RAW_CSV_PATH, REPORTS_DIR
+from road_accidents.config import (
+    BASELINE_MODELS_DIR,
+    FIGURES_DIR,
+    PROCESSED_DIR,
+    RAW_CSV_PATH,
+    REPORTS_DIR,
+)
 from road_accidents.data import load_raw
 from road_accidents.features import add_time_features
 from road_accidents.viz import (
@@ -40,9 +46,9 @@ def main() -> int:
     y_train = pd.read_parquet(PROCESSED_DIR / "y_train.parquet")["y"].to_numpy()
     y_test = pd.read_parquet(PROCESSED_DIR / "y_test.parquet")["y"].to_numpy()
 
-    lr = joblib.load(MODELS_DIR / "lr.joblib")
-    rf = joblib.load(MODELS_DIR / "rf.joblib")
-    xgb = joblib.load(MODELS_DIR / "xgb.joblib")
+    lr = joblib.load(BASELINE_MODELS_DIR / "lr.joblib")
+    rf = joblib.load(BASELINE_MODELS_DIR / "rf.joblib")
+    xgb = joblib.load(BASELINE_MODELS_DIR / "xgb.joblib")
 
     print("[figure] severity class balance")
     save_severity_distribution(y_train, FIGURES_DIR / "severity_distribution.png")
@@ -56,7 +62,7 @@ def main() -> int:
     print("[figure] XGBoost SHAP summary (Fatal class)")
     save_xgb_shap_summary(xgb, X_test, FIGURES_DIR / "xgb_shap_fatal.png")
 
-    results_path = REPORTS_DIR / "results.json"
+    results_path = REPORTS_DIR / "baseline_results.json"
     if results_path.exists():
         results = json.loads(results_path.read_text())
         for r in results:
