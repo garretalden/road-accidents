@@ -2,10 +2,12 @@
 
     uv run python scripts/train_experiment.py my_new_model
 
-Loads experiments/<module_name>.py, trains it on the same preprocessed data
-baseline uses, evaluates on the held-out test set, saves the model to
-models/experiments/<SLUG>.joblib, and upserts the result (by slug) into
-reports/experiments_results.json without touching any other results.
+Loads experiments/<module_name>.py, trains it on the preprocessed data
+(downsampled train set by default, or the full train set if the module sets
+BALANCE = "full" — see experiments/_template.py), evaluates on the held-out
+test set, saves the model to models/experiments/<SLUG>.joblib, and upserts the
+result (by slug) into reports/experiments_results.json without touching any
+other results.
 """
 
 from __future__ import annotations
@@ -20,9 +22,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import joblib
-import pandas as pd
 
-from road_accidents.config import EXPERIMENTS_MODELS_DIR, PROCESSED_DIR, REPORTS_DIR
+from road_accidents.config import EXPERIMENTS_MODELS_DIR, REPORTS_DIR
+from road_accidents.data import load_processed
 from road_accidents.evaluate import evaluate
 
 
@@ -38,15 +40,13 @@ def main() -> int:
     module = importlib.import_module(f"experiments.{module_name}")
     name = module.NAME
     slug = module.SLUG
+    balance = getattr(module, "BALANCE", "downsampled")
 
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     EXPERIMENTS_MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("[load] processed data")
-    X_train = pd.read_parquet(PROCESSED_DIR / "X_train.parquet")
-    X_test = pd.read_parquet(PROCESSED_DIR / "X_test.parquet")
-    y_train = pd.read_parquet(PROCESSED_DIR / "y_train.parquet")["y"].to_numpy()
-    y_test = pd.read_parquet(PROCESSED_DIR / "y_test.parquet")["y"].to_numpy()
+    print(f"[load] processed data ({balance} train)")
+    X_train, X_test, y_train, y_test = load_processed(balance)
     print(f"       train {X_train.shape}, test {X_test.shape}")
 
     print(f"[train] {name}")

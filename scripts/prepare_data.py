@@ -61,10 +61,14 @@ def main() -> int:
     X_train_down, y_train_down = rus.fit_resample(X_train, y_train)
     print(f"       downsampled: {pd.Series(y_train_down).value_counts().to_dict()}")
 
-    print("[save] parquet + preprocessor")
+    print("[save] parquet (downsampled + full train variants) + preprocessor")
     X_train_down.to_parquet(PROCESSED_DIR / "X_train.parquet")
-    X_test.to_parquet(PROCESSED_DIR / "X_test.parquet")
     pd.DataFrame({"y": y_train_down}).to_parquet(PROCESSED_DIR / "y_train.parquet")
+    # Full, non-downsampled train set — for experiments that handle class
+    # imbalance via class/sample weighting instead of undersampling.
+    X_train.to_parquet(PROCESSED_DIR / "X_train_full.parquet")
+    pd.DataFrame({"y": y_train}).to_parquet(PROCESSED_DIR / "y_train_full.parquet")
+    X_test.to_parquet(PROCESSED_DIR / "X_test.parquet")
     pd.DataFrame({"y": y_test}).to_parquet(PROCESSED_DIR / "y_test.parquet")
     joblib.dump(preprocessor, MODELS_DIR / "preprocessor.joblib")
     joblib.dump(label_encoder, MODELS_DIR / "label_encoder.joblib")

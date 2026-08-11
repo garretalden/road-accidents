@@ -15,10 +15,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import joblib
-import pandas as pd
 
 from baseline import MODELS
-from road_accidents.config import BASELINE_MODELS_DIR, PROCESSED_DIR, REPORTS_DIR
+from road_accidents.config import BASELINE_MODELS_DIR, REPORTS_DIR
+from road_accidents.data import load_processed
 from road_accidents.evaluate import evaluate, write_results_table
 
 
@@ -26,11 +26,8 @@ def main() -> int:
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     BASELINE_MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("[load] processed data")
-    X_train = pd.read_parquet(PROCESSED_DIR / "X_train.parquet")
-    X_test = pd.read_parquet(PROCESSED_DIR / "X_test.parquet")
-    y_train = pd.read_parquet(PROCESSED_DIR / "y_train.parquet")["y"].to_numpy()
-    y_test = pd.read_parquet(PROCESSED_DIR / "y_test.parquet")["y"].to_numpy()
+    print("[load] processed data (downsampled train)")
+    X_train, X_test, y_train, y_test = load_processed("downsampled")
     print(f"       train {X_train.shape}, test {X_test.shape}")
 
     results = []
