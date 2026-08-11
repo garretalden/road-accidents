@@ -60,5 +60,9 @@ SEASON_MAP = {
 
 RUSH_HOURS = frozenset({7, 8, 9, 16, 17, 18})
 
+# UK road speed limits (mph) present in the data, for UI selection only —
+# Speed_limit is a numeric passthrough feature, not a learned set of categories.
+SPEED_LIMITS = [10, 15, 20, 30, 40, 50, 60, 70]
+
 # Downsampling targets (post LabelEncoder mapping: 0=Fatal, 1=Serious, 2=Slight)
 DOWNSAMPLE_TARGETS = {2: 60_000, 1: 60_000}  # Fatal (0) untouched

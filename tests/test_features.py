@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from road_accidents.features import add_time_features
+from road_accidents.features import add_time_features, hour_to_cyclical, is_rush_hour, month_to_season
 
 
 @pytest.fixture
@@ -52,3 +52,18 @@ def test_rush_hour_flag(sample_df: pd.DataFrame) -> None:
 def test_hour_unit_circle(sample_df: pd.DataFrame) -> None:
     out = add_time_features(sample_df)
     assert np.allclose(out["hour_sin"] ** 2 + out["hour_cos"] ** 2, 1.0)
+
+
+def test_scalar_helpers_match_bulk_output(sample_df: pd.DataFrame) -> None:
+    """The scalar helpers app.py uses for single-row inference must agree with
+    the vectorized path used for bulk training data on the same inputs."""
+    out = add_time_features(sample_df)
+    hours = [0, 12, 17]
+    months = [1, 7, 12]
+
+    for i, (hour, month) in enumerate(zip(hours, months)):
+        sin, cos = hour_to_cyclical(hour)
+        assert sin == pytest.approx(out["hour_sin"].iloc[i])
+        assert cos == pytest.approx(out["hour_cos"].iloc[i])
+        assert is_rush_hour(hour) == out["rush_hour"].iloc[i]
+        assert month_to_season(month) == out["Season"].iloc[i]
