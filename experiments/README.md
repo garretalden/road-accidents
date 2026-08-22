@@ -33,3 +33,18 @@ weighting inside `train()`:
 
 See `xgb_class_weighted.py` for a complete example of the "full" + sample
 weighting path.
+
+## Leakage-safe fixed XGBoost comparison
+
+The historical weighted experiment is frozen. To evaluate its selected model
+and the reproduced baseline XGBoost without another hyperparameter search, run:
+
+```bash
+make validate-xgb
+```
+
+This runs five-fold stratified cross-validation on the training split with a
+fresh preprocessor in every fold. Only after both models complete CV does it
+fit them on their full training inputs and evaluate the held-out test set once.
+Results are written to `reports/xgb_validation_results.json` and `.md`; fitted
+self-contained pipelines are saved under `models/experiments/`.

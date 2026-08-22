@@ -19,18 +19,27 @@ from .config import CLASS_NAMES
 def evaluate(model: Any, X_test: pd.DataFrame, y_test: np.ndarray, name: str) -> dict:
     """Compute macro + per-class metrics and the confusion matrix for a fitted model."""
     y_pred = model.predict(X_test)
+    return evaluate_predictions(y_test, y_pred, name)
+
+
+def evaluate_predictions(y_true: np.ndarray, y_pred: np.ndarray, name: str) -> dict:
+    """Compute the standard metrics from already-generated predictions."""
     return {
         "name": name,
-        "accuracy": float(accuracy_score(y_test, y_pred)),
-        "macro_f1": float(f1_score(y_test, y_pred, average="macro")),
+        "accuracy": float(accuracy_score(y_true, y_pred)),
+        "macro_f1": float(f1_score(y_true, y_pred, average="macro")),
         "per_class_precision": precision_score(
-            y_test, y_pred, average=None, zero_division=0
+            y_true, y_pred, labels=range(len(CLASS_NAMES)), average=None, zero_division=0
         ).tolist(),
         "per_class_recall": recall_score(
-            y_test, y_pred, average=None, zero_division=0
+            y_true, y_pred, labels=range(len(CLASS_NAMES)), average=None, zero_division=0
         ).tolist(),
-        "per_class_f1": f1_score(y_test, y_pred, average=None, zero_division=0).tolist(),
-        "confusion_matrix": confusion_matrix(y_test, y_pred).tolist(),
+        "per_class_f1": f1_score(
+            y_true, y_pred, labels=range(len(CLASS_NAMES)), average=None, zero_division=0
+        ).tolist(),
+        "confusion_matrix": confusion_matrix(
+            y_true, y_pred, labels=range(len(CLASS_NAMES))
+        ).tolist(),
     }
 
 
