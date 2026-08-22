@@ -48,3 +48,8 @@ fresh preprocessor in every fold. Only after both models complete CV does it
 fit them on their full training inputs and evaluate the held-out test set once.
 Results are written to `reports/xgb_validation_results.json` and `.md`; fitted
 self-contained pipelines are saved under `models/experiments/`.
+
+To tune a new full-data weighted XGBoost model after producing that reference
+comparison, run `make tune-xgb`. The search uses training folds only, selects
+by macro F1, evaluates the winner with five folds, and writes separate tuning
+artifacts and reports without modifying the frozen experiments.

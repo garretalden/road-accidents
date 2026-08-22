@@ -1,4 +1,4 @@
-.PHONY: setup data prepare train train-baseline experiment validate-xgb figures app all test clean
+.PHONY: setup data prepare train train-baseline experiment validate-xgb tune-xgb figures app all test clean
 
 setup:
 	uv sync
@@ -20,6 +20,9 @@ experiment:
 validate-xgb:
 	uv run python scripts/validate_xgb.py
 
+tune-xgb:
+	uv run python scripts/tune_xgb_weighted.py
+
 figures:
 	uv run python scripts/make_figures.py
 
@@ -34,4 +37,5 @@ all: prepare train figures
 clean:
 	rm -rf data/processed/*.parquet models/baseline/*.joblib models/experiments/*.joblib \
 		reports/figures/*.png reports/baseline_results.json reports/experiments_results.json \
-		reports/xgb_validation_results.json reports/xgb_validation_results.md
+		reports/xgb_validation_results.json reports/xgb_validation_results.md \
+		reports/xgb_tuning_results.json reports/xgb_tuning_results.md
