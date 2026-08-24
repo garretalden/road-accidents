@@ -3,8 +3,17 @@ import pandas as pd
 import pytest
 import joblib
 
-from src.evaluation import apply_fatal_threshold, build_error_cohorts, evaluate_predictions, select_fatal_threshold
+from src.evaluation import (
+    aggregate_fatal_shap_by_source,
+    apply_fatal_threshold,
+    build_error_cohorts,
+    class_pair_overlaps,
+    evaluate_predictions,
+    select_fatal_threshold,
+)
 from src.models import OrdinalPredictor, cumulative_targets, fit_multiclass, ordinal_probabilities
+from src.preprocessing import build_preprocessor
+from src.visualization import PLOT_CLASS_ORDER, save_feature_distribution_by_class
 
 
 class BinaryModel:
@@ -70,3 +79,51 @@ def test_self_contained_pipeline_serializes_and_predicts(tmp_path):
     probabilities = joblib.load(path).predict_proba(X.iloc[:2])
     assert probabilities.shape == (2, 3)
     assert np.allclose(probabilities.sum(axis=1), 1)
+
+
+def test_fatal_shap_is_aggregated_to_interpretable_source_features():
+    rows = []
+    for road_type in (1, 6):
+        rows.append({
+            "Road_Type": road_type, "Light_Conditions": 1, "Weather_Conditions": 1,
+            "Road_Surface_Conditions": 1, "1st_Road_Class": 3, "2nd_Road_Class": -1,
+            "Pedestrian_Crossing-Physical_Facilities": 0, "Day_of_Week": 2,
+            "Urban_or_Rural_Area": 1, "Season": "Winter", "Speed_limit": 30,
+            "hour_sin": 0.0, "hour_cos": 1.0, "rush_hour": 0,
+        })
+    preprocessor = build_preprocessor().fit(pd.DataFrame(rows))
+    names = [name.split("__", 1)[-1] for name in preprocessor.get_feature_names_out()]
+    ranking = aggregate_fatal_shap_by_source(
+        preprocessor, names, np.ones((3, len(names)))
+    )
+    by_name = {row["source_feature"]: row for row in ranking}
+    assert len(by_name["Road_Type"]["components"]) == 2
+    assert by_name["Road_Type"]["mean_abs_fatal_shap"] == pytest.approx(2.0)
+    assert set(by_name["Hour_of_Day"]["components"]) == {"hour_sin", "hour_cos"}
+
+
+def test_pairwise_overlap_uses_shared_support_for_all_true_classes():
+    y_true = np.array([0, 0, 1, 1, 2, 2])
+    numeric = pd.Series([0, 0, 0, 0, 10, 10])
+    rows = class_pair_overlaps(numeric, y_true, categorical=False, bins=2)
+    scores = {(row["class_a"], row["class_b"]): row["overlap"] for row in rows}
+    assert scores[("Fatal", "Serious")] == pytest.approx(1.0)
+    assert scores[("Fatal", "Slight")] == pytest.approx(0.0)
+
+    categorical = pd.Series(["wet", "wet", "wet", "dry", "dry", "dry"])
+    rows = class_pair_overlaps(categorical, y_true, categorical=True)
+    scores = {(row["class_a"], row["class_b"]): row["overlap"] for row in rows}
+    assert scores[("Fatal", "Serious")] == pytest.approx(0.5)
+
+
+def test_true_class_distribution_plot_uses_requested_order(tmp_path):
+    path = tmp_path / "distribution.png"
+    save_feature_distribution_by_class(
+        pd.Series([20, 30, 40, 50, 60, 70]),
+        np.array([2, 2, 1, 1, 0, 0]),
+        "Speed_limit",
+        0.25,
+        path,
+    )
+    assert PLOT_CLASS_ORDER == ["Slight", "Serious", "Fatal"]
+    assert path.stat().st_size > 0

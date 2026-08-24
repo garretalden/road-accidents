@@ -16,6 +16,39 @@ from sklearn.metrics import average_precision_score, precision_recall_curve  # n
 
 from . import CLASS_NAMES, RANDOM_STATE  # noqa: E402
 
+PLOT_CLASS_ORDER = ["Slight", "Serious", "Fatal"]
+CLASS_PALETTE = {"Slight": "#4C78A8", "Serious": "#F2CF5B", "Fatal": "#D62728"}
+CATEGORY_LABELS = {
+    "Road_Type": {
+        1: "Roundabout", 2: "One-way street", 3: "Dual carriageway",
+        6: "Single carriageway", 7: "Slip road", 9: "Unknown",
+    },
+    "Light_Conditions": {
+        1: "Daylight", 4: "Dark: lights lit", 5: "Dark: lights unlit",
+        6: "Dark: no lighting", 7: "Dark: unknown lighting",
+    },
+    "Weather_Conditions": {
+        1: "Fine", 2: "Rain", 3: "Snow", 4: "Fine + high winds",
+        5: "Rain + high winds", 6: "Snow + high winds", 7: "Fog/mist",
+        8: "Other", 9: "Unknown",
+    },
+    "Road_Surface_Conditions": {
+        1: "Dry", 2: "Wet/damp", 3: "Snow", 4: "Frost/ice",
+        5: "Flood", 9: "Unknown",
+    },
+    "1st_Road_Class": {
+        1: "Motorway", 2: "A(M)", 3: "A", 4: "B", 5: "C", 6: "Unclassified",
+    },
+    "2nd_Road_Class": {
+        -1: "No second road", 1: "Motorway", 2: "A(M)", 3: "A",
+        4: "B", 5: "C", 6: "Unclassified",
+    },
+    "Day_of_Week": {1: "Sunday", 2: "Monday", 3: "Tuesday", 4: "Wednesday",
+                    5: "Thursday", 6: "Friday", 7: "Saturday"},
+    "Urban_or_Rural_Area": {1: "Urban", 2: "Rural", 3: "Unallocated"},
+    "rush_hour": {0: "No", 1: "Yes"},
+}
+
 
 def save_correlation_heatmap(df: pd.DataFrame, path: Path) -> None:
     numeric = df.select_dtypes(include=[np.number])
@@ -242,57 +275,83 @@ def save_fatal_threshold_tradeoff(
     plt.close(fig)
 
 
-def save_feature_distribution_overlap(
+def is_categorical_distribution(values: pd.Series, feature: str) -> bool:
+    """Choose proportions for categorical/low-cardinality features."""
+    return (
+        feature in CATEGORY_LABELS
+        or not pd.api.types.is_numeric_dtype(values)
+        or values.nunique(dropna=True) <= 12
+    )
+
+
+def save_feature_distribution_by_class(
     values: pd.Series,
-    is_correct: np.ndarray,
+    y_true: np.ndarray,
     feature: str,
-    overlap: float,
+    fatal_serious_overlap: float,
     path: Path,
 ) -> None:
-    """Plot correct-versus-incorrect feature distributions."""
+    """Plot independently normalized distributions for all true severity classes."""
+    severity = pd.Categorical(
+        np.asarray(CLASS_NAMES, dtype=object)[np.asarray(y_true, dtype=int)],
+        categories=PLOT_CLASS_ORDER,
+        ordered=True,
+    )
     frame = pd.DataFrame(
         {
             feature: values.to_numpy(),
-            "Prediction": np.where(is_correct, "Correct", "Incorrect"),
+            "True severity": severity,
         }
     )
     fig, ax = plt.subplots(figsize=(9, 5))
-    if pd.api.types.is_numeric_dtype(values):
-        unique = values.nunique(dropna=True)
-        if unique <= 12:
-            sns.histplot(
-                data=frame,
-                x=feature,
-                hue="Prediction",
-                stat="probability",
-                common_norm=False,
-                discrete=True,
-                multiple="dodge",
-                shrink=0.8,
-                ax=ax,
-            )
-        else:
-            sns.histplot(
-                data=frame,
-                x=feature,
-                hue="Prediction",
-                stat="density",
-                common_norm=False,
-                element="step",
-                fill=False,
-                bins=20,
-                ax=ax,
-            )
+    if not is_categorical_distribution(values, feature):
+        sns.histplot(
+            data=frame,
+            x=feature,
+            hue="True severity",
+            hue_order=PLOT_CLASS_ORDER,
+            palette=CLASS_PALETTE,
+            stat="density",
+            common_norm=False,
+            common_bins=True,
+            element="step",
+            fill=False,
+            bins=20,
+            linewidth=1.8,
+            ax=ax,
+        )
+        ax.set_ylabel("Within-class density")
     else:
+        labels = CATEGORY_LABELS.get(feature, {})
+        observed = values.dropna().unique().tolist()
+        observed = sorted(observed) if all(isinstance(value, (int, float, np.number)) for value in observed) else sorted(observed, key=str)
+        display_order = [labels.get(value, str(value)) for value in observed]
+        frame[feature] = pd.Categorical(
+            frame[feature].map(lambda value: labels.get(value, str(value))),
+            categories=display_order,
+            ordered=True,
+        )
         proportions = (
-            frame.groupby("Prediction")[feature]
+            frame.groupby("True severity", observed=False)[feature]
             .value_counts(normalize=True)
             .rename("proportion")
             .reset_index()
         )
-        sns.barplot(data=proportions, x=feature, y="proportion", hue="Prediction", ax=ax)
+        sns.barplot(
+            data=proportions,
+            x=feature,
+            y="proportion",
+            order=display_order,
+            hue="True severity",
+            hue_order=PLOT_CLASS_ORDER,
+            palette=CLASS_PALETTE,
+            ax=ax,
+        )
         ax.tick_params(axis="x", rotation=45)
-    ax.set_title(f"{feature}: correct vs incorrect (overlap = {overlap:.3f})")
+        ax.set_ylabel("Within-class proportion")
+    ax.set_title(
+        f"{feature} by true severity (Fatal–Serious overlap = {fatal_serious_overlap:.3f})"
+    )
     fig.tight_layout()
     fig.savefig(path, dpi=160, bbox_inches="tight")
     plt.close(fig)

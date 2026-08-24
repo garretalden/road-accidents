@@ -162,14 +162,76 @@ def build_error_cohorts(y_true: np.ndarray, y_pred: np.ndarray) -> pd.DataFrame:
     )
 
 
-def histogram_overlap(left: pd.Series, right: pd.Series, *, bins: int = 20) -> float:
-    a = pd.to_numeric(left, errors="coerce").dropna().to_numpy()
-    b = pd.to_numeric(right, errors="coerce").dropna().to_numpy()
-    if len(a) == 0 or len(b) == 0:
-        return 0.0
-    if min(a.min(), b.min()) == max(a.max(), b.max()):
-        return 1.0
-    edges = np.histogram_bin_edges(np.concatenate([a, b]), bins=bins)
-    ah, _ = np.histogram(a, edges)
-    bh, _ = np.histogram(b, edges)
-    return float(np.minimum(ah / ah.sum(), bh / bh.sum()).sum())
+def aggregate_fatal_shap_by_source(
+    preprocessor: Any,
+    transformed_feature_names: list[str],
+    fatal_shap_values: np.ndarray,
+) -> list[dict]:
+    """Aggregate transformed Fatal SHAP importance into interpretable source features."""
+    categorical_columns = list(preprocessor.transformers_[0][2])
+    numeric_columns = list(preprocessor.transformers_[1][2])
+    encoder = preprocessor.named_transformers_["cat"]
+    source_columns: list[str] = []
+    for index, (column, categories) in enumerate(zip(categorical_columns, encoder.categories_)):
+        dropped = encoder.drop_idx_ is not None and encoder.drop_idx_[index] is not None
+        source_columns.extend([column] * (len(categories) - int(dropped)))
+    source_columns.extend(numeric_columns)
+    if len(source_columns) != len(transformed_feature_names):
+        raise ValueError("could not map every transformed feature to its source column")
+    values = np.asarray(fatal_shap_values, dtype=float)
+    if values.ndim != 2 or values.shape[1] != len(source_columns):
+        raise ValueError("Fatal SHAP values must have shape (rows, transformed features)")
+
+    grouped: dict[str, dict] = {}
+    for index, source in enumerate(source_columns):
+        display_source = "Hour_of_Day" if source in {"hour_sin", "hour_cos"} else source
+        entry = grouped.setdefault(
+            display_source,
+            {"source_feature": display_source, "mean_abs_fatal_shap": 0.0, "components": []},
+        )
+        entry["mean_abs_fatal_shap"] += float(np.mean(np.abs(values[:, index])))
+        entry["components"].append(transformed_feature_names[index])
+    return sorted(grouped.values(), key=lambda row: row["mean_abs_fatal_shap"], reverse=True)
+
+
+def class_pair_overlaps(
+    values: pd.Series,
+    y_true: np.ndarray,
+    *,
+    categorical: bool,
+    bins: int = 20,
+) -> list[dict]:
+    """Calculate probability-mass intersection for every severity-class pair."""
+    labels = np.asarray(y_true, dtype=int)
+    if len(values) != len(labels):
+        raise ValueError("values and y_true must have equal lengths")
+    distributions: dict[int, np.ndarray] = {}
+    if categorical:
+        cleaned = values.astype("string").fillna("<missing>")
+        support = sorted(cleaned.unique().tolist())
+        for class_index in range(len(CLASS_NAMES)):
+            counts = cleaned[labels == class_index].value_counts(normalize=True)
+            distributions[class_index] = counts.reindex(support, fill_value=0).to_numpy()
+    else:
+        numeric = pd.to_numeric(values, errors="coerce").to_numpy(dtype=float)
+        finite = numeric[np.isfinite(numeric)]
+        if len(finite) == 0:
+            raise ValueError("numeric overlap requires at least one finite value")
+        if float(finite.min()) == float(finite.max()):
+            edges = np.array([finite.min() - 0.5, finite.max() + 0.5])
+        else:
+            edges = np.histogram_bin_edges(finite, bins=bins)
+        for class_index in range(len(CLASS_NAMES)):
+            class_values = numeric[(labels == class_index) & np.isfinite(numeric)]
+            counts, _ = np.histogram(class_values, bins=edges)
+            distributions[class_index] = counts / counts.sum() if counts.sum() else counts.astype(float)
+
+    pairs = [(0, 1), (0, 2), (1, 2)]
+    return [
+        {
+            "class_a": CLASS_NAMES[left],
+            "class_b": CLASS_NAMES[right],
+            "overlap": float(np.minimum(distributions[left], distributions[right]).sum()),
+        }
+        for left, right in pairs
+    ]

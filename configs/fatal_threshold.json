@@ -1,9 +1,13 @@
 {
-  "status": "requires_retraining",
+  "status": "ready",
   "model_artifact": "models/tuned_xgb.joblib",
-  "class_order": ["Fatal", "Serious", "Slight"],
+  "class_order": [
+    "Fatal",
+    "Serious",
+    "Slight"
+  ],
   "fatal_class_index": 0,
   "selection_data": "five-fold out-of-fold training predictions only",
   "selection_metric": "macro_f1",
-  "threshold": null
+  "threshold": 0.615
 }

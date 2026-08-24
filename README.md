@@ -51,7 +51,7 @@ make train-weighted     # fixed class-weighted model
 make train-tuned        # tuning + 5-fold validation + OOF threshold; about 1 hour
 make train-ordinal      # two cumulative binary models; uses tuned parameters
 make evaluate           # the only stage that evaluates the frozen test split
-make error-analysis     # report, confusion matrices, PR, SHAP, distributions
+make error-analysis     # figures + machine-readable metrics; curated report is preserved
 ```
 
 `make train-all` runs the four training stages. `make report` runs evaluation
@@ -92,11 +92,12 @@ tests/                Feature, preprocessing, and prediction contracts
 
 ## Portfolio outputs
 
-After retraining, [reports/modeling_report.md](reports/modeling_report.md)
-contains the model comparison, raw and normalized confusion matrices, Fatal
-precision–recall analysis, the leakage-safe threshold tradeoff, global and
-Fatal-specific SHAP interpretation, feature-distribution overlaps, and model
-limitations.
+After retraining, `make error-analysis` generates raw and normalized confusion
+matrices, Fatal precision–recall analysis, the leakage-safe threshold tradeoff,
+global and Fatal-specific SHAP interpretation, and true-severity feature
+distribution overlaps. Machine-readable outputs and a generated Markdown
+companion live under `reports/results/`. The manually curated
+[modeling report](reports/modeling_report.md) is never overwritten by the script.
 
 ## Limitations
 
