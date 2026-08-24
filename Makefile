@@ -1,50 +1,44 @@
-.PHONY: setup data prepare train train-baseline experiment validate-xgb tune-xgb threshold-xgb ordinal-xgb figures app all test clean
+.PHONY: setup data test train-baseline train-weighted train-tuned train-ordinal train-all evaluate error-analysis report app all clean
 
 setup:
-	uv sync
+	uv sync --group dev
 
 data:
-	uv run python scripts/download_data.py
-
-prepare:
-	uv run python scripts/prepare_data.py
-
-train: train-baseline
-
-train-baseline:
-	uv run python scripts/train_baseline.py
-
-experiment:
-	uv run python scripts/train_experiment.py $(NAME)
-
-validate-xgb:
-	uv run python scripts/validate_xgb.py
-
-tune-xgb:
-	uv run python scripts/tune_xgb_weighted.py
-
-threshold-xgb:
-	uv run python scripts/threshold_xgb_fatal.py
-
-ordinal-xgb:
-	uv run python scripts/validate_xgb_ordinal.py
-
-figures:
-	uv run python scripts/make_figures.py
-
-app:
-	uv run streamlit run app.py
+	@test -f data/raw/UK_Accident.csv || (echo "Place UK_Accident.csv in data/raw/; see data/README.md" && exit 1)
+	@echo "data/raw/UK_Accident.csv is ready"
 
 test:
-	uv run pytest
+	uv run python -m pytest
 
-all: prepare train figures
+train-baseline: data
+	uv run python scripts/train_baseline.py
+
+train-weighted: data
+	uv run python scripts/train_weighted_xgb.py
+
+train-tuned: data
+	uv run python scripts/train_tuned_xgb.py
+
+train-ordinal: data
+	uv run python scripts/train_ordinal_xgb.py
+
+train-all: train-baseline train-weighted train-tuned train-ordinal
+
+evaluate: data
+	uv run python scripts/evaluate_models.py
+
+error-analysis: data
+	uv run python scripts/generate_error_analysis.py
+
+report: evaluate error-analysis
+
+app:
+	uv run streamlit run app/streamlit_app.py
+
+all: train-all report
 
 clean:
-	rm -rf data/processed/*.parquet models/baseline/*.joblib models/experiments/*.joblib \
-		reports/figures/*.png reports/baseline_results.json reports/experiments_results.json \
-		reports/xgb_validation_results.json reports/xgb_validation_results.md \
-		reports/xgb_tuning_results.json reports/xgb_tuning_results.md \
-		reports/xgb_fatal_threshold_results.json reports/xgb_fatal_threshold_results.md \
-		reports/xgb_ordinal_results.json reports/xgb_ordinal_results.md \
-		models/experiments/xgb_weighted_tuned_fatal_threshold.json
+	rm -f models/baseline_xgb.joblib models/weighted_xgb.joblib models/tuned_xgb.joblib
+	rm -f models/ordinal/serious_or_worse.joblib models/ordinal/fatal.joblib
+	rm -f reports/results/*.csv reports/results/*.json reports/figures/*.png
+	rm -f reports/figures/feature_distributions/*.png

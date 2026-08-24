@@ -1,99 +1,114 @@
-# UK Road Accident Severity — Prediction & Analysis
+# UK Road Accident Severity
 
-Predicting UK road accident severity (Fatal / Serious / Slight) from ~1.5M
-Department for Transport records (2005–2018), using only features available
-*before* the accident occurred: road, vehicle, weather, light, time, and
-location descriptors. Compares Logistic Regression, Random Forest, and
-XGBoost baselines.
+An end-to-end machine-learning study of whether a reported UK road collision
+will be **Fatal**, **Serious**, or **Slight**, using only information that exists
+before the collision. The project emphasizes rare-class evaluation, leakage-safe
+model selection, reproducibility, and honest discussion of operational limits.
 
-Originally built as a class project for **Penn CIS 545** (Big Data Analytics)
-by Garret Fantini, Stanley Jin, and Yuliya Solyanyk. This repo is my port to
-a reproducible, locally runnable project with a Streamlit demo.
+The data covers roughly 1.5 million Department for Transport records from
+2005–2018. Four XGBoost strategies are compared: a downsampled baseline, a
+class-weighted model, a tuned class-weighted model, and a cumulative-binary
+ordinal formulation.
 
-## Results
+## Why this version is being retrained
 
-Test-set metrics after downsampling Slight/Serious to 60k rows each (Fatal
-kept at ~15.5k). Macro F1 is the headline metric — it weights all three
-classes equally, unlike accuracy which is inflated by the dominant Slight
-class.
+An audit found that the earlier models included `Number_of_Vehicles`, meaning
+vehicles involved in the collision. That value is not available before a
+collision and violated the project's prediction premise. It has now been
+removed from data cleaning, preprocessing, the app, tests, and every model
+configuration. The incompatible model binaries and performance claims were
+deleted rather than presented as valid results.
 
-<!-- BEGIN RESULTS TABLE -->
-| Model | Macro F1 | Accuracy | F1 Fatal | F1 Serious | F1 Slight |
-| --- | --- | --- | --- | --- | --- |
-| Logistic Regression | 0.346 | 0.586 | 0.043 | 0.282 | 0.714 |
-| Random Forest | 0.336 | 0.539 | 0.072 | 0.240 | 0.696 |
-| XGBoost | **0.364** | **0.606** | 0.066 | 0.292 | **0.733** |
+## Modeling safeguards
 
-Classes: 0 = Fatal, 1 = Serious, 2 = Slight. XGBoost wins overall, but F1 on
-Fatal is dismal across the board — that's the story below in *What I'd do next*.
-<!-- END RESULTS TABLE -->
+- One deterministic stratified 80/20 split (`random_state=42`)
+- Fold-local preprocessing in every cross-validation run
+- Hyperparameter selection using training folds only
+- Fatal-threshold selection from out-of-fold training probabilities only
+- Training, tuning, and threshold-selection scripts never compute test metrics
+- Held-out evaluation and error analysis run only after model selection is frozen
+- Self-contained model pipelines that accept raw pre-accident fields
+- Macro F1 and Fatal precision/recall reported alongside accuracy
 
-Detailed JSON with per-class precision/recall/F1, confusion matrices, and
-selected hyperparameters is in `reports/results.json`.
+## Reproduce the project
 
-### Feature importance (XGBoost, Fatal class)
-
-![SHAP summary for Fatal class](reports/figures/xgb_shap_fatal.png)
-
-Speed limit and number of vehicles dominate the model's fatal-class
-predictions. Time-of-day (cyclical hour) and urban/rural setting are
-secondary contributors. See the notebook for the full narrative.
-
-## Quickstart
+Python 3.11 is required. `uv` is recommended; `requirements.txt` is included
+for standard pip environments.
 
 ```bash
-# 1. Install dependencies (creates .venv, installs from uv.lock)
-uv sync
-
-# 2. Get the dataset (~450 MB) — Kaggle API if set up, else prints manual instructions
+make setup
 make data
+```
 
-# 3. Run the pipeline: prepare → train → figures  (5–15 min on a laptop)
-make all
+Place `UK_Accident.csv` under `data/raw/` before running `make data`; see
+[data/README.md](data/README.md).
 
-# 4. Interactive demo
+Retrain models in order:
+
+```bash
+make train-baseline     # downsampled reference
+make train-weighted     # fixed class-weighted model
+make train-tuned        # tuning + 5-fold validation + OOF threshold; about 1 hour
+make train-ordinal      # two cumulative binary models; uses tuned parameters
+make evaluate           # the only stage that evaluates the frozen test split
+make error-analysis     # report, confusion matrices, PR, SHAP, distributions
+```
+
+`make train-all` runs the four training stages. `make report` runs evaluation
+and error analysis after artifacts exist. Avoid `make all` unless you intend to
+run the complete, potentially long pipeline.
+
+## Interactive demo
+
+```bash
 make app
 ```
 
-macOS note: XGBoost needs OpenMP — `brew install libomp`.
+The app defaults to `models/tuned_xgb.joblib`, displays raw class probabilities,
+and shows a threshold-adjusted decision only when the threshold config matches
+the selected artifact. After reviewing the regenerated comparison, choose a
+different model without editing code:
 
-## Layout
-
-```
-src/road_accidents/   # reusable functions (data, features, encoding, models, viz, evaluate)
-scripts/              # thin ordered pipeline (download, prepare, train, make_figures)
-app.py                # Streamlit demo — pick conditions, see predicted probabilities
-notebooks/            # narrative walk-through (imports from src/)
-tests/                # pytest suite for features + encoding
-data/                 # raw/ (gitignored, 450 MB) and processed/ parquet artifacts
-models/               # trained joblib files + fitted encoders (small; committed)
-reports/figures/      # PNGs referenced above
+```bash
+ROAD_ACCIDENT_MODEL=models/weighted_xgb.joblib make app
 ```
 
-## What I'd do next
+Until retraining is complete, the app intentionally displays a clear missing-
+artifact message instead of loading an obsolete model.
 
-The class-project results are honestly weak on the rarest class (fatal
-accidents), even after RandomUnderSampler downsampling. The imbalance ratio
-is roughly 60:1 Slight-vs-Fatal in the raw data. Things I'd try if this were
-a real project rather than a class exercise:
+## Repository layout
 
-- **Threshold tuning** on predicted probabilities per class rather than
-  taking argmax — the Fatal probabilities cluster near zero even for true
-  Fatal accidents, so a fixed threshold below 0.5 could recover recall.
-- **Class-weighted loss** for XGBoost via `sample_weight`, not just for RF
-  where `class_weight='balanced'` is already in the grid.
-- **SMOTE / SMOTE-NC** to synthesize minority-class examples instead of
-  discarding majority-class information.
-- **Calibration** via `CalibratedClassifierCV` (Platt or isotonic) so the
-  Streamlit demo's probabilities are actually interpretable as
-  probabilities.
-- **Richer features**: casualty age / vehicle type / driver info from the
-  companion Vehicles table (excluded here because it's post-crash for the
-  same accident but includes some pre-crash characteristics).
+```text
+app/                 Streamlit interface
+configs/             Versioned model and threshold configurations
+src/                 Reusable data, modeling, evaluation, and plotting code
+scripts/             Six reproducible pipeline entry points
+models/              Generated self-contained model artifacts
+reports/results/      CV, tuning, threshold, and held-out comparison outputs
+reports/figures/      Publication-ready diagnostics
+notebooks/            EDA and error-analysis narratives
+tests/                Feature, preprocessing, and prediction contracts
+```
 
-## Credits
+## Portfolio outputs
 
-Original class team: Garret Fantini, Stanley Jin, Yuliya Solyanyk (Penn CIS 545, 2024). Refactor and Streamlit demo by Garret Fantini.
+After retraining, [reports/modeling_report.md](reports/modeling_report.md)
+contains the model comparison, raw and normalized confusion matrices, Fatal
+precision–recall analysis, the leakage-safe threshold tradeoff, global and
+Fatal-specific SHAP interpretation, feature-distribution overlaps, and model
+limitations.
 
-Data: UK Department for Transport Road Safety Data, via
-[Kaggle](https://www.kaggle.com/datasets/silicon99/dft-accident-data).
+## Limitations
+
+The source contains police-reported personal-injury collisions, not exposure
+data for uneventful journeys, so predictions are conditional on a collision
+having occurred. Weather, lighting, and surface conditions require a known
+location and contemporaneous observations. Probabilities are not claimed to be
+calibrated risks.
+
+## Credits and license
+
+Original class project by Garret Fantini, Stanley Jin, and Yuliya Solyanyk at
+Penn CIS 545. Portfolio refactor and reproducibility work by Garret Fantini.
+
+Released under the [MIT License](LICENSE).

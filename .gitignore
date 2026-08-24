@@ -1,8 +1,6 @@
 # Data files (too large / restricted)
 data/raw/*
 data/processed/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
 
 # Python
 __pycache__/
@@ -31,7 +29,3 @@ htmlcov/
 
 # Streamlit
 .streamlit/secrets.toml
-
-# Random Forest artifact is ~290 MB (150 deep trees) — exceeds GitHub's
-# per-file limit. Regenerate locally with `make train`.
-models/baseline/rf.joblib

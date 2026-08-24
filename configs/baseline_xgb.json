@@ -1,0 +1,15 @@
+{
+  "name": "XGBoost baseline (downsampled)",
+  "slug": "baseline_xgb",
+  "balance": "downsampled",
+  "cv_folds": 5,
+  "downsample_targets": {"Serious": 60000, "Slight": 60000},
+  "parameters": {
+    "learning_rate": 0.07,
+    "n_estimators": 200,
+    "subsample": 1.0,
+    "colsample_bytree": 1.0,
+    "max_depth": 7,
+    "min_child_weight": 1
+  }
+}

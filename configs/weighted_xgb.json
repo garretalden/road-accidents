@@ -1,0 +1,14 @@
+{
+  "name": "XGBoost (class-weighted)",
+  "slug": "weighted_xgb",
+  "balance": "weighted",
+  "cv_folds": 5,
+  "parameters": {
+    "learning_rate": 0.05,
+    "n_estimators": 200,
+    "subsample": 0.7,
+    "colsample_bytree": 0.8,
+    "max_depth": 6,
+    "min_child_weight": 5
+  }
+}

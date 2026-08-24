@@ -1,0 +1,7 @@
+{
+  "name": "Ordinal cumulative XGBoost",
+  "slug": "ordinal_xgb",
+  "cv_folds": 5,
+  "parameter_source": "reports/results/xgb_tuning_results.json",
+  "parameters": {}
+}
