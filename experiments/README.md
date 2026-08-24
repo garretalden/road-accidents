@@ -53,3 +53,17 @@ To tune a new full-data weighted XGBoost model after producing that reference
 comparison, run `make tune-xgb`. The search uses training folds only, selects
 by macro F1, evaluates the winner with five folds, and writes separate tuning
 artifacts and reports without modifying the frozen experiments.
+
+After tuning, run `make threshold-xgb` to select a Fatal-class probability
+threshold. It generates five-fold out-of-fold probabilities from temporary
+models with the frozen tuned configuration, selects the threshold from those
+training predictions only, and then applies it once to the test probabilities
+from the existing saved tuned pipeline. The threshold configuration and full
+search report are saved separately from the XGBoost model.
+
+Run `make ordinal-xgb` for the separate cumulative-binary ordinal experiment.
+It uses the frozen tuned tree configuration for two full-data weighted tasks:
+Serious-or-Fatal versus Slight, and Fatal versus Serious-or-Slight. Independent
+probabilities are monotonically projected before being converted into three
+class probabilities. Five-fold validation completes before the test set is
+evaluated once, and existing multiclass artifacts are never overwritten.

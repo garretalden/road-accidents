@@ -177,6 +177,64 @@ def cross_validate_fixed_model(
     }
 
 
+def out_of_fold_probabilities(
+    spec: ValidationSpec,
+    X_train: pd.DataFrame,
+    y_train: np.ndarray,
+    *,
+    n_splits: int = 5,
+    downsample_targets: dict[int, int] = DOWNSAMPLE_TARGETS,
+    on_fold: Callable[[int, dict], None] | None = None,
+) -> tuple[np.ndarray, list[dict]]:
+    """Generate one leakage-safe probability vector per training observation.
+
+    Every fold gets a fresh preprocessor and estimator. Class balancing is
+    applied only to the fit portion through the same path used by fixed-model
+    validation; held-out rows are transformed and predicted exactly once.
+    """
+    splitter = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE)
+    probabilities = np.full((len(y_train), len(CLASS_NAMES)), np.nan, dtype=float)
+    prediction_counts = np.zeros(len(y_train), dtype=np.uint8)
+    folds = []
+
+    for fold_number, (fit_indices, validation_indices) in enumerate(
+        splitter.split(X_train, y_train), start=1
+    ):
+        pipeline, fitted_rows, fitted_counts = _fit(
+            spec,
+            X_train.iloc[fit_indices],
+            y_train[fit_indices],
+            downsample_targets,
+        )
+        fold_probabilities = pipeline.predict_proba(X_train.iloc[validation_indices])
+        if fold_probabilities.shape != (len(validation_indices), len(CLASS_NAMES)):
+            raise ValueError(
+                "predict_proba returned an unexpected shape: "
+                f"{fold_probabilities.shape}"
+            )
+        probabilities[validation_indices] = fold_probabilities
+        prediction_counts[validation_indices] += 1
+
+        metadata = {
+            "fold": fold_number,
+            "training_rows": int(len(fit_indices)),
+            "fitted_rows": int(fitted_rows),
+            "validation_rows": int(len(validation_indices)),
+            "training_class_counts": _class_counts(y_train[fit_indices]),
+            "fitted_class_counts": fitted_counts,
+            "validation_class_counts": _class_counts(y_train[validation_indices]),
+        }
+        folds.append(metadata)
+        if on_fold is not None:
+            on_fold(fold_number, metadata)
+
+    if not np.all(prediction_counts == 1) or not np.isfinite(probabilities).all():
+        raise RuntimeError("Each training row must receive exactly one finite OOF prediction")
+    if not np.allclose(probabilities.sum(axis=1), 1.0, atol=1e-6):
+        raise RuntimeError("OOF class probabilities must sum to one")
+    return probabilities, folds
+
+
 def fit_final_model(
     spec: ValidationSpec,
     X_train: pd.DataFrame,

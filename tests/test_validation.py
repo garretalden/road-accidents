@@ -6,7 +6,11 @@ import pytest
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 
 import road_accidents.validation as validation
-from road_accidents.validation import ValidationSpec, validate_fixed_model
+from road_accidents.validation import (
+    ValidationSpec,
+    out_of_fold_probabilities,
+    validate_fixed_model,
+)
 
 
 class RecordingTransformer(TransformerMixin, BaseEstimator):
@@ -35,6 +39,11 @@ class RecordingClassifier(ClassifierMixin, BaseEstimator):
     def predict(self, X):
         self.__class__.predict_indices.append(len(X))
         return np.full(len(X), self.majority_, dtype=int)
+
+    def predict_proba(self, X):
+        probabilities = np.full((len(X), 3), 0.1)
+        probabilities[:, self.majority_] = 0.8
+        return probabilities
 
 
 @pytest.fixture(autouse=True)
@@ -150,3 +159,18 @@ def test_summary_uses_sample_standard_deviation():
     assert summary["per_class"]["Fatal"]["f1"] == pytest.approx(
         {"mean": 0.4, "std": 0.2}
     )
+
+
+def test_oof_probabilities_fit_each_fold_once_without_using_held_out_rows():
+    X_train, y_train, _, _ = _data()
+    probabilities, folds = out_of_fold_probabilities(
+        _spec(), X_train, y_train, n_splits=3
+    )
+
+    assert probabilities.shape == (len(y_train), 3)
+    assert np.allclose(probabilities.sum(axis=1), 1.0)
+    assert len(folds) == 3
+    assert len(RecordingTransformer.fit_indices) == 3
+    assert len(RecordingClassifier.fit_weights) == 3
+    assert all(weights is not None for weights in RecordingClassifier.fit_weights)
+    assert sum(fold["validation_rows"] for fold in folds) == len(y_train)

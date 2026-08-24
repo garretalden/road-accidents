@@ -1,0 +1,15 @@
+{
+  "model_artifact": "models/experiments/xgb_weighted_tuned.joblib",
+  "model_sha256": "2730625c42ae3f72e9301a7559c7d2b4a8681aaf3c6943960533da94f18fa7af",
+  "parameter_fingerprint": "df63598a01f517e073dde875b1c18d05fe3f9f6ecb0159c8896468a0e52516fd",
+  "class_order": [
+    "Fatal",
+    "Serious",
+    "Slight"
+  ],
+  "fatal_class_index": 0,
+  "selection_data": "five-fold out-of-fold predictions on training split only",
+  "selection_metric": "macro_f1",
+  "threshold": 0.6305,
+  "rule": "Fatal if P(Fatal) >= threshold; otherwise argmax(Serious, Slight)"
+}
