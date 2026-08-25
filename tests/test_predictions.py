@@ -12,8 +12,22 @@ from src.evaluation import (
     cross_validate_pipeline,
     evaluate_predictions,
     select_fatal_threshold,
+    summarize_folds,
 )
-from src.models import OrdinalPredictor, cumulative_targets, fit_multiclass, ordinal_probabilities
+from src.joint_tuning import (
+    fit_parameters_for_alpha,
+    render_joint_tuning_markdown,
+    sample_joint_candidates,
+    select_joint_candidate,
+    summarize_joint_candidate,
+)
+from src.models import (
+    OrdinalPredictor,
+    cumulative_targets,
+    fit_multiclass,
+    load_config,
+    ordinal_probabilities,
+)
 from src.preprocessing import build_preprocessor
 from src.visualization import PLOT_CLASS_ORDER, save_feature_distribution_by_class
 from src.weighting import fine_alpha_grid, interpolated_sample_weight, select_alpha_result
@@ -112,6 +126,75 @@ def test_alpha_selection_uses_macro_f1_then_lower_alpha():
         {"alpha": 0.2, "macro_f1_mean": 0.3},
     ]
     assert select_alpha_result(rows)["alpha"] == 0.4
+
+
+def test_joint_candidate_sampling_is_reproducible_and_within_bounds():
+    config = load_config("xgb_joint_tuned")
+    first = sample_joint_candidates(config)
+    second = sample_joint_candidates(config)
+    assert first == second
+    assert len(first) == 20
+    for candidate in first:
+        assert 0.0 <= candidate["alpha"] <= 1.0
+        assert candidate["max_depth"] in {3, 4, 5, 6, 7}
+        assert 0.02 <= candidate["learning_rate"] <= 0.15
+        assert candidate["min_child_weight"] in {1, 3, 5, 8, 12}
+        assert 0.65 <= candidate["subsample"] <= 1.0
+        assert 0.65 <= candidate["colsample_bytree"] <= 1.0
+        assert candidate["gamma"] in {0, 0.25, 0.5, 1, 2}
+        assert 0.001 <= candidate["reg_alpha"] <= 5.0
+        assert 0.1 <= candidate["reg_lambda"] <= 20.0
+
+
+def test_joint_candidate_alpha_is_applied_to_only_the_supplied_fold_labels():
+    fold_y = np.array([0, 1, 1, 2, 2, 2])
+    half = fit_parameters_for_alpha(0.5)(fold_y)["model__sample_weight"]
+    full = fit_parameters_for_alpha(1.0)(fold_y)["model__sample_weight"]
+    assert len(half) == len(fold_y)
+    assert np.allclose(half, 1.0 + 0.5 * (full - 1.0))
+
+
+def test_joint_candidate_summary_selection_and_report_fields():
+    folds = [
+        evaluate_predictions(
+            np.array([0, 0, 1, 1, 2, 2]),
+            np.array([0, 1, 1, 2, 2, 2]),
+            "joint test",
+        )
+        for _ in range(3)
+    ]
+    parameters = {
+        "max_depth": 5,
+        "learning_rate": 0.05,
+        "min_child_weight": 3,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "gamma": 0.25,
+        "reg_alpha": 0.1,
+        "reg_lambda": 2.0,
+        "n_estimators": 1000,
+    }
+    row = summarize_joint_candidate(1, 0.4, parameters, folds)
+    required = {
+        "alpha", "macro_f1_mean", "macro_f1_std", "serious_f1_mean",
+        "fatal_precision_mean", "fatal_recall_mean", "fatal_f1_mean", "slight_f1_mean",
+    }
+    assert required.issubset(row)
+    tied_later = {**row, "candidate": 2}
+    assert select_joint_candidate([tied_later, row])["candidate"] == 1
+
+    validation = summarize_folds(folds)
+    report = {
+        "selection_data": "training folds only",
+        "candidate_count": 20,
+        "search_folds": 3,
+        "selected_candidate": row,
+        "validation": validation,
+        "search": [row],
+    }
+    markdown = render_joint_tuning_markdown(report)
+    assert "Selected candidate: 1" in markdown
+    assert "| candidate | alpha |" in markdown
 
 
 def test_cross_validation_reports_fold_progress():

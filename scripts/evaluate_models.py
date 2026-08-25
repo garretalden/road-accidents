@@ -10,6 +10,7 @@ import pandas as pd
 from src import FIGURES_DIR, MODELS_DIR, RESULTS_DIR
 from src.data import load_split
 from src.evaluation import evaluate
+from src.joint_tuning import render_joint_tuning_markdown
 from src.models import OrdinalPredictor, load_config
 from src.visualization import save_model_comparison, save_severity_distribution
 
@@ -21,6 +22,7 @@ def main() -> int:
         "weighted_xgb": MODELS_DIR / "weighted_xgb.joblib",
         "tuned_xgb": MODELS_DIR / "tuned_xgb.joblib",
         "interpolated_weight_xgb": MODELS_DIR / "interpolated_weight_xgb.joblib",
+        "xgb_joint_tuned": MODELS_DIR / "experiments" / "xgb_joint_tuned.joblib",
         "ordinal_serious": MODELS_DIR / "ordinal" / "serious_or_worse.joblib",
         "ordinal_fatal": MODELS_DIR / "ordinal" / "fatal.joblib",
     }
@@ -35,6 +37,10 @@ def main() -> int:
         (
             load_config("interpolated_weight_xgb")["name"],
             joblib.load(required["interpolated_weight_xgb"]),
+        ),
+        (
+            load_config("xgb_joint_tuned")["name"],
+            joblib.load(required["xgb_joint_tuned"]),
         ),
         (load_config("ordinal_xgb")["name"], OrdinalPredictor(
             joblib.load(required["ordinal_serious"]), joblib.load(required["ordinal_fatal"])
@@ -61,6 +67,15 @@ def main() -> int:
     existing = json.loads((RESULTS_DIR / "ordinal_results.json").read_text())
     existing["untouched_test"] = ordinal
     (RESULTS_DIR / "ordinal_results.json").write_text(json.dumps(existing, indent=2) + "\n")
+    joint_name = load_config("xgb_joint_tuned")["name"]
+    joint = next(result for result in results if result["name"] == joint_name)
+    joint_path = RESULTS_DIR / "xgb_joint_tuning_results.json"
+    joint_report = json.loads(joint_path.read_text())
+    joint_report["untouched_test"] = joint
+    joint_path.write_text(json.dumps(joint_report, indent=2) + "\n")
+    (RESULTS_DIR / "xgb_joint_tuning_results.md").write_text(
+        render_joint_tuning_markdown(joint_report)
+    )
     print("[done] held-out model comparison written once")
     return 0
 

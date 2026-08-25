@@ -6,9 +6,10 @@ before the collision. The project emphasizes rare-class evaluation, leakage-safe
 model selection, reproducibility, and honest discussion of operational limits.
 
 The data covers roughly 1.5 million Department for Transport records from
-2005–2018. Five XGBoost strategies are compared: a downsampled baseline, a
+2005–2018. Six XGBoost strategies are compared: a downsampled baseline, a
 class-weighted model, a tuned class-weighted model, a tuned model with optimized
-class-weight interpolation, and a cumulative-binary ordinal formulation.
+class-weight interpolation, a joint hyperparameter-and-weight tuning experiment,
+and a cumulative-binary ordinal formulation.
 
 ## Why this version is being retrained
 
@@ -51,6 +52,7 @@ make train-weighted     # fixed class-weighted model
 make train-tuned        # tuning + 5-fold validation + OOF threshold; about 1 hour
 make train-interpolated # two-stage 3-fold search over class-weight interpolation
 make train-ordinal      # two cumulative binary models; uses tuned parameters
+make train-joint        # 20-candidate joint hyperparameter/alpha search; run separately
 make evaluate           # the only stage that evaluates the frozen test split
 make error-analysis     # figures + machine-readable metrics; curated report is preserved
 ```
@@ -59,10 +61,25 @@ make error-analysis     # figures + machine-readable metrics; curated report is 
 and error analysis after artifacts exist. Avoid `make all` unless you intend to
 run the complete, potentially long pipeline.
 
+The expensive joint experiment is intentionally excluded from `make train-all`.
+Run it explicitly, watch its candidate/fold progress in the terminal, and only
+then evaluate the frozen model on the untouched test split:
+
+```bash
+make train-joint
+make evaluate
+```
+
 The interpolation search freezes the tuned XGBoost hyperparameters and selects
 `alpha` using training folds only. It first searches 0.0–1.0 in 0.2 steps, then
 searches within ±0.15 of the coarse winner in 0.05 steps. Results are written to
 `reports/results/xgb_weight_alpha_search.csv` and `.json`.
+
+The joint search samples alpha across the full 0–1 interval together with the
+XGBoost hyperparameters, selects by three-fold mean macro-F1, validates the
+frozen winner with five folds, and saves it under
+`models/experiments/xgb_joint_tuned.joblib`. Its JSON and Markdown reports are
+written under `reports/results/` when `make train-joint` completes.
 
 ## Interactive demo
 
@@ -88,7 +105,7 @@ artifact message instead of loading an obsolete model.
 app/                 Streamlit interface
 configs/             Versioned model and threshold configurations
 src/                 Reusable data, modeling, evaluation, and plotting code
-scripts/             Six reproducible pipeline entry points
+scripts/             Seven reproducible pipeline entry points
 models/              Generated self-contained model artifacts
 reports/results/      CV, tuning, threshold, and held-out comparison outputs
 reports/figures/      Publication-ready diagnostics
