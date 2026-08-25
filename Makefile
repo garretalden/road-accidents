@@ -1,4 +1,4 @@
-.PHONY: setup data test train-baseline train-weighted train-tuned train-ordinal train-all evaluate error-analysis report app all clean
+.PHONY: setup data test train-baseline train-weighted train-tuned train-interpolated train-ordinal train-all evaluate error-analysis report app all clean
 
 setup:
 	uv sync --group dev
@@ -19,10 +19,13 @@ train-weighted: data
 train-tuned: data
 	uv run python scripts/train_tuned_xgb.py
 
+train-interpolated: data
+	uv run python scripts/train_interpolated_weight_xgb.py
+
 train-ordinal: data
 	uv run python scripts/train_ordinal_xgb.py
 
-train-all: train-baseline train-weighted train-tuned train-ordinal
+train-all: train-baseline train-weighted train-tuned train-interpolated train-ordinal
 
 evaluate: data
 	uv run python scripts/evaluate_models.py
@@ -38,7 +41,7 @@ app:
 all: train-all report
 
 clean:
-	rm -f models/baseline_xgb.joblib models/weighted_xgb.joblib models/tuned_xgb.joblib
+	rm -f models/baseline_xgb.joblib models/weighted_xgb.joblib models/tuned_xgb.joblib models/interpolated_weight_xgb.joblib
 	rm -f models/ordinal/serious_or_worse.joblib models/ordinal/fatal.joblib
 	rm -f reports/results/*.csv reports/results/*.json reports/figures/*.png
 	rm -f reports/figures/feature_distributions/*.png

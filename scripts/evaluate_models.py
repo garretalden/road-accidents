@@ -20,6 +20,7 @@ def main() -> int:
         "baseline_xgb": MODELS_DIR / "baseline_xgb.joblib",
         "weighted_xgb": MODELS_DIR / "weighted_xgb.joblib",
         "tuned_xgb": MODELS_DIR / "tuned_xgb.joblib",
+        "interpolated_weight_xgb": MODELS_DIR / "interpolated_weight_xgb.joblib",
         "ordinal_serious": MODELS_DIR / "ordinal" / "serious_or_worse.joblib",
         "ordinal_fatal": MODELS_DIR / "ordinal" / "fatal.joblib",
     }
@@ -31,6 +32,10 @@ def main() -> int:
         (load_config("baseline_xgb")["name"], joblib.load(required["baseline_xgb"])),
         (load_config("weighted_xgb")["name"], joblib.load(required["weighted_xgb"])),
         (load_config("tuned_xgb")["name"], joblib.load(required["tuned_xgb"])),
+        (
+            load_config("interpolated_weight_xgb")["name"],
+            joblib.load(required["interpolated_weight_xgb"]),
+        ),
         (load_config("ordinal_xgb")["name"], OrdinalPredictor(
             joblib.load(required["ordinal_serious"]), joblib.load(required["ordinal_fatal"])
         )),

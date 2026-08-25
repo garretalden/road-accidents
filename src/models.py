@@ -16,6 +16,7 @@ from xgboost import XGBClassifier
 
 from . import CONFIGS_DIR, RANDOM_STATE
 from .preprocessing import build_preprocessor, validate_pre_accident_columns
+from .weighting import interpolated_sample_weight
 
 BASE_XGB_PARAMETERS = {
     "objective": "multi:softprob",
@@ -71,10 +72,19 @@ def balanced_fit_parameters(y: np.ndarray) -> dict[str, np.ndarray]:
     return {"model__sample_weight": compute_sample_weight("balanced", y)}
 
 
+def interpolated_fit_parameters(y: np.ndarray, alpha: float) -> dict[str, np.ndarray]:
+    return {"model__sample_weight": interpolated_sample_weight(y, alpha)}
+
+
 def fit_multiclass(config: dict, X: pd.DataFrame, y: np.ndarray) -> Any:
     validate_pre_accident_columns(X)
     model = make_multiclass_pipeline(config)
-    fit_parameters = balanced_fit_parameters(y) if config["balance"] == "weighted" else {}
+    if config["balance"] == "weighted":
+        fit_parameters = balanced_fit_parameters(y)
+    elif config["balance"] == "interpolated":
+        fit_parameters = interpolated_fit_parameters(y, config["weight_alpha"])
+    else:
+        fit_parameters = {}
     return model.fit(X, y, **fit_parameters)
 
 

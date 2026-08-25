@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+from time import perf_counter
 from typing import Any
 
 import numpy as np
@@ -80,12 +81,16 @@ def cross_validate_pipeline(
     n_splits: int = 5,
     fit_parameters: Callable[[np.ndarray], dict] | None = None,
     collect_probabilities: bool = False,
+    progress_callback: Callable[[str], None] | None = None,
 ) -> tuple[list[dict], np.ndarray | None]:
     """Fit a fresh full pipeline per fold and optionally return OOF probabilities."""
     splitter = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE)
     folds: list[dict] = []
     oof = np.full((len(y), len(CLASS_NAMES)), np.nan) if collect_probabilities else None
     for number, (fit_index, validation_index) in enumerate(splitter.split(X, y), start=1):
+        started = perf_counter()
+        if progress_callback:
+            progress_callback(f"fold {number}/{n_splits} started")
         fold_model = clone(pipeline)
         params = fit_parameters(y[fit_index]) if fit_parameters else {}
         fold_model.fit(X.iloc[fit_index], y[fit_index], **params)
@@ -95,6 +100,11 @@ def cross_validate_pipeline(
             {"fold": number, "training_rows": len(fit_index), "validation_rows": len(validation_index)}
         )
         folds.append(metrics)
+        if progress_callback:
+            progress_callback(
+                f"fold {number}/{n_splits} completed: macro-F1={metrics['macro_f1']:.4f} "
+                f"elapsed={perf_counter() - started:.1f}s"
+            )
         if oof is not None:
             oof[validation_index] = fold_model.predict_proba(X.iloc[validation_index])
     if oof is not None and not np.isfinite(oof).all():

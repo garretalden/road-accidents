@@ -2,18 +2,21 @@ import numpy as np
 import pandas as pd
 import pytest
 import joblib
+from sklearn.dummy import DummyClassifier
 
 from src.evaluation import (
     aggregate_fatal_shap_by_source,
     apply_fatal_threshold,
     build_error_cohorts,
     class_pair_overlaps,
+    cross_validate_pipeline,
     evaluate_predictions,
     select_fatal_threshold,
 )
 from src.models import OrdinalPredictor, cumulative_targets, fit_multiclass, ordinal_probabilities
 from src.preprocessing import build_preprocessor
 from src.visualization import PLOT_CLASS_ORDER, save_feature_distribution_by_class
+from src.weighting import fine_alpha_grid, interpolated_sample_weight, select_alpha_result
 
 
 class BinaryModel:
@@ -79,6 +82,54 @@ def test_self_contained_pipeline_serializes_and_predicts(tmp_path):
     probabilities = joblib.load(path).predict_proba(X.iloc[:2])
     assert probabilities.shape == (2, 3)
     assert np.allclose(probabilities.sum(axis=1), 1)
+
+
+def test_interpolated_sample_weight_endpoints_and_midpoint():
+    y = np.array([0, 1, 1, 2, 2, 2])
+    unweighted = interpolated_sample_weight(y, 0.0)
+    balanced = interpolated_sample_weight(y, 1.0)
+    midpoint = interpolated_sample_weight(y, 0.5)
+    assert np.allclose(unweighted, 1.0)
+    assert np.allclose(midpoint, 1.0 + 0.5 * (balanced - 1.0))
+
+
+@pytest.mark.parametrize("alpha", [-0.01, 1.01, np.nan])
+def test_interpolated_sample_weight_rejects_invalid_alpha(alpha):
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        interpolated_sample_weight(np.array([0, 1, 2]), alpha)
+
+
+def test_fine_alpha_grid_is_inclusive_and_clipped():
+    assert fine_alpha_grid(0.6) == [value / 1000 for value in range(450, 751, 50)]
+    assert fine_alpha_grid(0.0) == [value / 1000 for value in range(0, 151, 50)]
+    assert fine_alpha_grid(1.0) == [value / 1000 for value in range(850, 1001, 50)]
+
+
+def test_alpha_selection_uses_macro_f1_then_lower_alpha():
+    rows = [
+        {"alpha": 0.6, "macro_f1_mean": 0.4},
+        {"alpha": 0.4, "macro_f1_mean": 0.4},
+        {"alpha": 0.2, "macro_f1_mean": 0.3},
+    ]
+    assert select_alpha_result(rows)["alpha"] == 0.4
+
+
+def test_cross_validation_reports_fold_progress():
+    messages = []
+    X = pd.DataFrame({"feature": range(9)})
+    y = np.repeat([0, 1, 2], 3)
+    folds, _ = cross_validate_pipeline(
+        DummyClassifier(strategy="most_frequent"),
+        X,
+        y,
+        name="progress test",
+        n_splits=3,
+        progress_callback=messages.append,
+    )
+    assert len(folds) == 3
+    assert sum("started" in message for message in messages) == 3
+    assert sum("completed" in message for message in messages) == 3
+    assert all("elapsed=" in message for message in messages if "completed" in message)
 
 
 def test_fatal_shap_is_aggregated_to_interpretable_source_features():

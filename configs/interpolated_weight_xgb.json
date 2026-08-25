@@ -1,0 +1,20 @@
+{
+  "name": "XGBoost (interpolated class weight)",
+  "slug": "interpolated_weight_xgb",
+  "balance": "interpolated",
+  "cv_folds": 3,
+  "coarse_alphas": [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
+  "fine_radius": 0.15,
+  "fine_step": 0.05,
+  "parameters": {
+    "n_estimators": 600,
+    "subsample": 0.7,
+    "reg_lambda": 5,
+    "reg_alpha": 0,
+    "min_child_weight": 5,
+    "max_depth": 7,
+    "learning_rate": 0.07,
+    "gamma": 0.1,
+    "colsample_bytree": 0.6
+  }
+}
