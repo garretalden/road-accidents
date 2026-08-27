@@ -47,7 +47,7 @@ Place `UK_Accident.csv` under `data/raw/` before running `make data`; see
 Retrain models in order:
 
 ```bash
-make train-baseline     # downsampled reference
+make train-baseline     # downsampled reference + OOF threshold
 make train-weighted     # fixed class-weighted model
 make train-tuned        # tuning + 5-fold validation + OOF threshold; about 1 hour
 make train-interpolated # two-stage 3-fold search over class-weight interpolation
@@ -55,6 +55,7 @@ make train-ordinal      # two cumulative binary models; uses tuned parameters
 make train-joint        # 20-candidate joint hyperparameter/alpha search; run separately
 make evaluate           # the only stage that evaluates the frozen test split
 make error-analysis     # figures + machine-readable metrics; curated report is preserved
+make eda                # model-independent EDA figures + data-quality tables
 ```
 
 `make train-all` runs all five training stages. `make report` runs evaluation
@@ -115,11 +116,18 @@ tests/                Feature, preprocessing, and prediction contracts
 
 ## Portfolio outputs
 
-After retraining, `make error-analysis` generates raw and normalized confusion
-matrices, Fatal precision–recall analysis, the leakage-safe threshold tradeoff,
-global and Fatal-specific SHAP interpretation, and true-severity feature
-distribution overlaps. Machine-readable outputs and a generated Markdown
-companion live under `reports/results/`. The manually curated
+`make eda` audits the raw CSV and writes model-independent descriptive figures
+to `reports/figures/eda/` and report-ready tables to `reports/results/eda/`.
+Substantive plots use the complete cleaned analytical cohort; raw fields are
+used only to document dimensions, missingness, invalid values, and field-removal
+decisions. The figures describe patterns among recorded accidents and do not
+represent exposure-adjusted accident risk.
+
+After retraining, `make error-analysis` uses the downsampled baseline to generate
+raw and normalized confusion matrices, Fatal precision–recall analysis, its
+leakage-safe threshold tradeoff, global and Fatal-specific SHAP interpretation,
+and true-severity feature distribution overlaps. Machine-readable outputs and a
+generated Markdown companion live under `reports/results/`. The manually curated
 [modeling report](reports/modeling_report.md) is never overwritten by the script.
 
 ## Limitations

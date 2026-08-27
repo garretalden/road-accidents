@@ -1,0 +1,11 @@
+metric,value
+Raw rows,1504150
+Raw columns,33
+Exact duplicate rows,0
+Rows with missing values in any raw field,1503240
+Rows with missing values in retained fields,150
+Rows removed by complete-case cleaning,150
+Cleaned rows,1504000
+Retained source columns before feature derivation,13
+Derived analytical columns,20
+Rows with a repeated Accident_Index,576763

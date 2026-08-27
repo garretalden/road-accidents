@@ -1,8 +1,8 @@
 {
   "model": {
-    "name": "XGBoost (class-weighted, tuned)",
-    "artifact": "models/tuned_xgb.joblib",
-    "sha256": "2c6c97ec01041995d529676958ab94712e0a877e466b978cccf6822702719193"
+    "name": "XGBoost baseline (downsampled)",
+    "artifact": "models/baseline_xgb.joblib",
+    "sha256": "424926a0390eee93130bfd68ebce543a60c058d43c1f9414a3f0211ea1475613"
   },
   "evaluation": {
     "split": "frozen untouched stratified 20% test split",
@@ -18,48 +18,48 @@
       "Serious": 40895,
       "Slight": 256017
     },
-    "confusion_matrix_policy": "tuned-XGB multiclass predict/argmax"
+    "confusion_matrix_policy": "downsampled-baseline XGB multiclass predict/argmax"
   },
   "test_metrics": {
-    "name": "XGBoost (class-weighted, tuned)",
-    "accuracy": 0.5457712765957446,
-    "macro_f1": 0.3242838380902468,
+    "name": "XGBoost baseline (downsampled)",
+    "accuracy": 0.5822905585106383,
+    "macro_f1": 0.34365301234728945,
     "per_class_precision": [
-      0.03495175848117025,
-      0.15951375327368789,
-      0.8879771003560473
+      0.08298319327731092,
+      0.173583380870888,
+      0.8865299976835765
     ],
     "per_class_recall": [
-      0.5776748971193416,
-      0.25765986061865753,
-      0.591308389677248
+      0.04063786008230453,
+      0.5357378652647022,
+      0.5979524797181437
     ],
     "per_class_f1": [
-      0.0659153606855667,
-      0.19704166355000374,
-      0.70989449003517
+      0.054558011049723756,
+      0.26220895093680247,
+      0.7141920750553421
     ],
     "confusion_matrix": [
       [
-        2246,
-        735,
-        907
+        158,
+        2689,
+        1041
       ],
       [
-        12167,
-        10537,
-        18191
+        433,
+        21909,
+        18553
       ],
       [
-        49847,
-        54785,
-        151385
+        1313,
+        101618,
+        153086
       ]
     ]
   },
   "fatal_threshold": {
     "status": "ready",
-    "model_artifact": "models/tuned_xgb.joblib",
+    "model_artifact": "models/baseline_xgb.joblib",
     "class_order": [
       "Fatal",
       "Serious",
@@ -68,29 +68,29 @@
     "fatal_class_index": 0,
     "selection_data": "five-fold out-of-fold training predictions only",
     "selection_metric": "macro_f1",
-    "threshold": 0.615
+    "threshold": 0.27
   },
   "fatal_precision_recall": {
-    "average_precision": 0.0426050805404515,
-    "selected_threshold": 0.615,
-    "precision_at_selected_threshold": 0.06469373709566414,
-    "recall_at_selected_threshold": 0.169238683127572
+    "average_precision": 0.045408112129736694,
+    "selected_threshold": 0.27,
+    "precision_at_selected_threshold": 0.060707050905051296,
+    "recall_at_selected_threshold": 0.23894032921810698
   },
-  "threshold_tradeoff_source": "reports/results/threshold_results.csv (training OOF only)",
+  "threshold_tradeoff_source": "reports/results/baseline_threshold_results.csv (training OOF only)",
   "shap": {
     "sample_rows": 2000,
     "random_state": 42,
     "source_feature_ranking": [
       {
         "source_feature": "Speed_limit",
-        "mean_abs_fatal_shap": 0.2927920331726491,
+        "mean_abs_fatal_shap": 0.38816182931512594,
         "components": [
           "Speed_limit"
         ]
       },
       {
         "source_feature": "Hour_of_Day",
-        "mean_abs_fatal_shap": 0.20437888322059006,
+        "mean_abs_fatal_shap": 0.21141107825866493,
         "components": [
           "hour_sin",
           "hour_cos"
@@ -98,7 +98,7 @@
       },
       {
         "source_feature": "2nd_Road_Class",
-        "mean_abs_fatal_shap": 0.19685478594790645,
+        "mean_abs_fatal_shap": 0.2102934554895819,
         "components": [
           "2nd_Road_Class_-1",
           "2nd_Road_Class_1",
@@ -111,7 +111,7 @@
       },
       {
         "source_feature": "1st_Road_Class",
-        "mean_abs_fatal_shap": 0.14056710120284677,
+        "mean_abs_fatal_shap": 0.13631273198835164,
         "components": [
           "1st_Road_Class_1",
           "1st_Road_Class_2",
@@ -122,17 +122,8 @@
         ]
       },
       {
-        "source_feature": "Urban_or_Rural_Area",
-        "mean_abs_fatal_shap": 0.1255666980576607,
-        "components": [
-          "Urban_or_Rural_Area_1",
-          "Urban_or_Rural_Area_2",
-          "Urban_or_Rural_Area_3"
-        ]
-      },
-      {
         "source_feature": "Road_Type",
-        "mean_abs_fatal_shap": 0.12271383598841283,
+        "mean_abs_fatal_shap": 0.1173007788643771,
         "components": [
           "Road_Type_Dual carriageway",
           "Road_Type_One way street",
@@ -143,8 +134,28 @@
         ]
       },
       {
+        "source_feature": "Urban_or_Rural_Area",
+        "mean_abs_fatal_shap": 0.11150121843132314,
+        "components": [
+          "Urban_or_Rural_Area_1",
+          "Urban_or_Rural_Area_2",
+          "Urban_or_Rural_Area_3"
+        ]
+      },
+      {
+        "source_feature": "Light_Conditions",
+        "mean_abs_fatal_shap": 0.10973978772607643,
+        "components": [
+          "Light_Conditions_Darkeness: No street lighting",
+          "Light_Conditions_Darkness: Street lighting unknown",
+          "Light_Conditions_Darkness: Street lights present and lit",
+          "Light_Conditions_Darkness: Street lights present but unlit",
+          "Light_Conditions_Daylight: Street light present"
+        ]
+      },
+      {
         "source_feature": "Weather_Conditions",
-        "mean_abs_fatal_shap": 0.12047395330167228,
+        "mean_abs_fatal_shap": 0.09257979885863615,
         "components": [
           "Weather_Conditions_Fine with high winds",
           "Weather_Conditions_Fine without high winds",
@@ -159,7 +170,7 @@
       },
       {
         "source_feature": "Day_of_Week",
-        "mean_abs_fatal_shap": 0.11563054597119435,
+        "mean_abs_fatal_shap": 0.08223185875775561,
         "components": [
           "Day_of_Week_1",
           "Day_of_Week_2",
@@ -171,19 +182,8 @@
         ]
       },
       {
-        "source_feature": "Light_Conditions",
-        "mean_abs_fatal_shap": 0.08905368874478893,
-        "components": [
-          "Light_Conditions_Darkeness: No street lighting",
-          "Light_Conditions_Darkness: Street lighting unknown",
-          "Light_Conditions_Darkness: Street lights present and lit",
-          "Light_Conditions_Darkness: Street lights present but unlit",
-          "Light_Conditions_Daylight: Street light present"
-        ]
-      },
-      {
         "source_feature": "Road_Surface_Conditions",
-        "mean_abs_fatal_shap": 0.07845310550607103,
+        "mean_abs_fatal_shap": 0.060351011434877935,
         "components": [
           "Road_Surface_Conditions_Dry",
           "Road_Surface_Conditions_Flood (Over 3cm of water)",
@@ -195,7 +195,7 @@
       },
       {
         "source_feature": "Pedestrian_Crossing-Physical_Facilities",
-        "mean_abs_fatal_shap": 0.07195050412844459,
+        "mean_abs_fatal_shap": 0.05915958606160917,
         "components": [
           "Pedestrian_Crossing-Physical_Facilities_Central refuge",
           "Pedestrian_Crossing-Physical_Facilities_Footbridge or subway",
@@ -207,7 +207,7 @@
       },
       {
         "source_feature": "Season",
-        "mean_abs_fatal_shap": 0.06774757772141493,
+        "mean_abs_fatal_shap": 0.03704137576315679,
         "components": [
           "Season_Fall",
           "Season_Spring",
@@ -217,7 +217,7 @@
       },
       {
         "source_feature": "rush_hour",
-        "mean_abs_fatal_shap": 0.02865755032436573,
+        "mean_abs_fatal_shap": 0.01341277979928418,
         "components": [
           "rush_hour"
         ]
@@ -228,7 +228,7 @@
     {
       "rank": 1,
       "source_feature": "Speed_limit",
-      "mean_abs_fatal_shap": 0.2927920331726491,
+      "mean_abs_fatal_shap": 0.38816182931512594,
       "components": [
         "Speed_limit"
       ],
@@ -255,7 +255,7 @@
     {
       "rank": 2,
       "source_feature": "Hour_of_Day",
-      "mean_abs_fatal_shap": 0.20437888322059006,
+      "mean_abs_fatal_shap": 0.21141107825866493,
       "components": [
         "hour_sin",
         "hour_cos"
@@ -283,7 +283,7 @@
     {
       "rank": 3,
       "source_feature": "2nd_Road_Class",
-      "mean_abs_fatal_shap": 0.19685478594790645,
+      "mean_abs_fatal_shap": 0.2102934554895819,
       "components": [
         "2nd_Road_Class_-1",
         "2nd_Road_Class_1",
@@ -316,7 +316,7 @@
     {
       "rank": 4,
       "source_feature": "1st_Road_Class",
-      "mean_abs_fatal_shap": 0.14056710120284677,
+      "mean_abs_fatal_shap": 0.13631273198835164,
       "components": [
         "1st_Road_Class_1",
         "1st_Road_Class_2",
@@ -347,30 +347,33 @@
     },
     {
       "rank": 5,
-      "source_feature": "Urban_or_Rural_Area",
-      "mean_abs_fatal_shap": 0.1255666980576607,
+      "source_feature": "Road_Type",
+      "mean_abs_fatal_shap": 0.1173007788643771,
       "components": [
-        "Urban_or_Rural_Area_1",
-        "Urban_or_Rural_Area_2",
-        "Urban_or_Rural_Area_3"
+        "Road_Type_Dual carriageway",
+        "Road_Type_One way street",
+        "Road_Type_Roundabout",
+        "Road_Type_Single carriageway",
+        "Road_Type_Slip road",
+        "Road_Type_Unknown"
       ],
       "distribution_kind": "categorical",
-      "figure": "reports/figures/feature_distributions/urban_or_rural_area.png",
+      "figure": "reports/figures/feature_distributions/road_type.png",
       "pairwise_overlaps": [
         {
           "class_a": "Fatal",
           "class_b": "Serious",
-          "overlap": 0.7741011118507348
+          "overlap": 0.9442700794013776
         },
         {
           "class_a": "Fatal",
           "class_b": "Slight",
-          "overlap": 0.6969531844601176
+          "overlap": 0.9235072015134798
         },
         {
           "class_a": "Serious",
           "class_b": "Slight",
-          "overlap": 0.9228520726093827
+          "overlap": 0.939807289617002
         }
       ]
     }

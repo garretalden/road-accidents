@@ -1,4 +1,4 @@
-.PHONY: setup data test train-baseline train-weighted train-tuned train-interpolated train-joint train-ordinal train-all evaluate error-analysis report app all clean
+.PHONY: setup data test eda train-baseline train-weighted train-tuned train-interpolated train-joint train-ordinal train-all evaluate error-analysis report app all clean
 
 setup:
 	uv sync --group dev
@@ -9,6 +9,9 @@ data:
 
 test:
 	uv run python -m pytest
+
+eda: data
+	uv run python scripts/generate_eda.py
 
 train-baseline: data
 	uv run python scripts/train_baseline.py
