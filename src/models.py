@@ -14,7 +14,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils.class_weight import compute_sample_weight
 from xgboost import XGBClassifier
 
-from . import CONFIGS_DIR, RANDOM_STATE
+from . import CONFIGS_DIR, PROJECT_ROOT, RANDOM_STATE
 from .preprocessing import build_preprocessor, validate_pre_accident_columns
 from .weighting import interpolated_sample_weight
 
@@ -48,6 +48,40 @@ def load_config(name_or_path: str | Path) -> dict:
     if not path.suffix:
         path = CONFIGS_DIR / f"{path}.json"
     return json.loads(path.read_text())
+
+
+def load_selected_tuned_parameters(path: str | Path) -> dict:
+    """Load and validate the parameter winner produced by tuned-model search."""
+    result_path = Path(path)
+    if not result_path.is_absolute():
+        result_path = PROJECT_ROOT / result_path
+    if not result_path.exists():
+        raise FileNotFoundError(
+            f"Tuned-parameter results not found at {result_path}. "
+            "Run `make train-tuned` first."
+        )
+    try:
+        report = json.loads(result_path.read_text())
+    except json.JSONDecodeError as error:
+        raise ValueError(f"Tuned-parameter results are not valid JSON: {result_path}") from error
+    parameters = report.get("selected_parameters")
+    required = {
+        "n_estimators",
+        "learning_rate",
+        "max_depth",
+        "min_child_weight",
+        "subsample",
+        "colsample_bytree",
+        "gamma",
+        "reg_alpha",
+        "reg_lambda",
+    }
+    if not isinstance(parameters, dict):
+        raise ValueError(f"{result_path} does not contain selected_parameters")
+    missing = sorted(required.difference(parameters))
+    if missing:
+        raise ValueError(f"selected_parameters is missing required values: {missing}")
+    return parameters.copy()
 
 
 def make_multiclass_pipeline(config: dict) -> Pipeline:

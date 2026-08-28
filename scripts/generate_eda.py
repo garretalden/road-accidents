@@ -20,7 +20,7 @@ import seaborn as sns
 from scipy.stats import chi2_contingency
 
 from src import FIGURES_DIR, RAW_DATA_PATH, RESULTS_DIR
-from src.data import DROP_COLUMNS
+from src.data import DROP_COLUMNS, NON_SUBSTANTIVE_SOURCE_COLUMNS, deduplicate_raw_records
 from src.features import RUSH_HOURS, SEASON_MAP
 
 SEVERITY_MAP = {1: "Fatal", 2: "Serious", 3: "Slight"}
@@ -132,7 +132,8 @@ def invalid_value_checks(raw: pd.DataFrame) -> pd.DataFrame:
 
 def prepare_cleaned_data(raw: pd.DataFrame) -> pd.DataFrame:
     """Apply the project cleaning contract and add readable EDA time/category fields."""
-    retained = raw.drop(columns=DROP_COLUMNS, errors="ignore").dropna().copy()
+    deduplicated = deduplicate_raw_records(raw)
+    retained = deduplicated.drop(columns=DROP_COLUMNS, errors="ignore").dropna().copy()
     dates = pd.to_datetime(retained["Date"], format="%d/%m/%Y", errors="raise")
     times = pd.to_datetime(retained["Time"], format="%H:%M", errors="raise")
     hour = times.dt.hour
@@ -182,22 +183,31 @@ def column_audit(raw: pd.DataFrame) -> pd.DataFrame:
 
 def audit_summary(raw: pd.DataFrame, cleaned: pd.DataFrame) -> pd.DataFrame:
     """Return compact raw-to-cleaned reconciliation metrics."""
+    substantive_columns = [
+        column for column in raw.columns if column not in NON_SUBSTANTIVE_SOURCE_COLUMNS
+    ]
+    deduplicated = deduplicate_raw_records(raw)
     retained_columns = [column for column in raw.columns if column not in DROP_COLUMNS]
     metrics = {
         "Raw rows": len(raw),
         "Raw columns": raw.shape[1],
-        "Exact duplicate rows": int(raw.duplicated().sum()),
+        "Duplicate substantive rows removed": int(raw.duplicated(subset=substantive_columns).sum()),
+        "Rows after substantive deduplication": len(deduplicated),
         "Rows with missing values in any raw field": int(raw.isna().any(axis=1).sum()),
-        "Rows with missing values in retained fields": int(
-            raw[retained_columns].isna().any(axis=1).sum()
+        "Deduplicated rows with missing values in retained fields": int(
+            deduplicated[retained_columns].isna().any(axis=1).sum()
         ),
-        "Rows removed by complete-case cleaning": len(raw) - len(cleaned),
+        "Rows removed by complete-case cleaning": len(deduplicated) - len(cleaned),
         "Cleaned rows": len(cleaned),
         "Retained source columns before feature derivation": len(retained_columns),
         "Derived analytical columns": cleaned.shape[1],
     }
     if "Accident_Index" in raw:
         metrics["Rows with a repeated Accident_Index"] = int(raw["Accident_Index"].duplicated().sum())
+        scientific = raw["Accident_Index"].astype("string").str.contains(
+            r"E\+", case=False, na=False
+        )
+        metrics["Rows with scientific-notation Accident_Index"] = int(scientific.sum())
     return pd.DataFrame({"metric": list(metrics), "value": list(metrics.values())})
 
 

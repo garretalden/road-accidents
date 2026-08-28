@@ -1,7 +1,6 @@
-"""Interactive pre-accident severity prediction demo."""
+"""Interactive prediction-time severity classification demo."""
 # ruff: noqa: E402
 from __future__ import annotations
-import json
 import os
 from pathlib import Path
 
@@ -11,13 +10,13 @@ import joblib
 import numpy as np
 import pandas as pd
 import streamlit as st
-from src import CLASS_NAMES, CONFIGS_DIR
+from src import CLASS_NAMES
+from src.deployment import DEFAULT_MODEL_ARTIFACT, matching_threshold_config
 from src.evaluation import apply_fatal_threshold
 from src.features import hour_to_cyclical, is_rush_hour, month_to_season
 from src.preprocessing import ONE_HOT_FEATURES
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_MODEL = "models/tuned_xgb.joblib"
 SPEED_LIMITS = [10, 15, 20, 30, 40, 50, 60, 70]
 st.set_page_config(page_title="UK Road Accident Severity", page_icon="🚧", layout="centered")
 
@@ -34,8 +33,8 @@ def categories(model, column: str) -> list:
 
 def main() -> None:
     st.title("UK road-accident severity")
-    st.caption("Leakage-safe predictions from conditions known before a collision")
-    relative_model = os.environ.get("ROAD_ACCIDENT_MODEL", DEFAULT_MODEL)
+    st.caption("Predictions from static context and contemporaneous conditions")
+    relative_model = os.environ.get("ROAD_ACCIDENT_MODEL", DEFAULT_MODEL_ARTIFACT)
     model_path = PROJECT_ROOT / relative_model
     if not model_path.exists():
         st.error(f"Model not found: `{relative_model}`. Follow the retraining sequence in README.md.")
@@ -72,12 +71,11 @@ def main() -> None:
         "Day_of_Week": day, "Urban_or_Rural_Area": area,
     }])
     probabilities = model.predict_proba(row)[0]
-    st.subheader("Raw model probabilities")
-    st.bar_chart(pd.DataFrame({"Probability": probabilities}, index=CLASS_NAMES))
+    st.subheader("Uncalibrated class scores")
+    st.bar_chart(pd.DataFrame({"Score": probabilities}, index=CLASS_NAMES))
     st.metric("Argmax prediction", CLASS_NAMES[int(np.argmax(probabilities))])
-    threshold_config = json.loads((CONFIGS_DIR / "fatal_threshold.json").read_text())
-    configured_model = threshold_config.get("model_artifact")
-    if threshold_config.get("status") == "ready" and configured_model == relative_model:
+    threshold_config = matching_threshold_config(relative_model)
+    if threshold_config is not None:
         threshold = float(threshold_config["threshold"])
         adjusted = apply_fatal_threshold(probabilities.reshape(1, -1), threshold)[0]
         st.metric("Threshold-adjusted decision", CLASS_NAMES[int(adjusted)])

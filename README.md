@@ -1,17 +1,22 @@
 # UK Road Accident Severity
 
 An end-to-end machine-learning study of whether a reported UK road collision
-will be **Fatal**, **Serious**, or **Slight**, using only information that exists
-before the collision. The project emphasizes rare-class evaluation, leakage-safe
+will be **Fatal**, **Serious**, or **Slight**, using only information available
+at prediction time. The project emphasizes rare-class evaluation, leakage-safe
 model selection, reproducibility, and honest discussion of operational limits.
 
-The data covers roughly 1.5 million Department for Transport records from
-2005–2018. Six XGBoost strategies are compared: a downsampled baseline, a
+The source contains roughly 1.5 million Department for Transport rows from
+2005–2007 and 2009–2014. Six XGBoost strategies are compared: a downsampled baseline, a
 class-weighted model, a tuned class-weighted model, a tuned model with optimized
 class-weight interpolation, a joint hyperparameter-and-weight tuning experiment,
 and a cumulative-binary ordinal formulation.
 
-## Why this version is being retrained
+> **Retraining required:** the raw CSV contains 34,155 duplicate substantive
+> records that were previously hidden by its exported row-index column. The
+> preprocessing pipeline now removes those copies before splitting. Previous
+> model artifacts, metrics, thresholds, and figures have been invalidated.
+
+## Why this version requires retraining
 
 An audit found that the earlier models included `Number_of_Vehicles`, meaning
 vehicles involved in the collision. That value is not available before a
@@ -19,6 +24,13 @@ collision and violated the project's prediction premise. It has now been
 removed from data cleaning, preprocessing, the app, tests, and every model
 configuration. The incompatible model binaries and performance claims were
 deleted rather than presented as valid results.
+
+A later data audit also found 34,155 complete duplicate copies when all source
+fields except the non-substantive `Unnamed: 0` export index were compared. The
+much larger repeated-`Accident_Index` count is not a valid duplicate count:
+many identifiers were truncated to scientific notation in the distributed
+CSV. Deduplication therefore compares complete substantive records and runs
+before feature removal, missing-value cleaning, or train/test splitting.
 
 ## Modeling safeguards
 
@@ -28,7 +40,7 @@ deleted rather than presented as valid results.
 - Fatal-threshold selection from out-of-fold training probabilities only
 - Training, tuning, and threshold-selection scripts never compute test metrics
 - Held-out evaluation and error analysis run only after model selection is frozen
-- Self-contained model pipelines that accept raw pre-accident fields
+- Self-contained model pipelines that accept raw prediction-time fields
 - Macro F1 and Fatal precision/recall reported alongside accuracy
 
 ## Reproduce the project
@@ -57,6 +69,19 @@ make evaluate           # the only stage that evaluates the frozen test split
 make error-analysis     # figures + machine-readable metrics; curated report is preserved
 make eda                # model-independent EDA figures + data-quality tables
 ```
+
+To run the complete sequence—including the expensive joint search—in the
+required order:
+
+```bash
+make full-retrain
+```
+
+This command runs the unit suite and a read-only data preflight before deleting
+old artifacts or starting training. The preflight pins the exact audited CSV,
+its deduplicated cohort, and the deterministic split counts.
+If a later training stage is interrupted, resume from that individual target;
+rerunning `make full-retrain` intentionally cleans completed artifacts first.
 
 `make train-all` runs all five training stages. `make report` runs evaluation
 and error analysis after artifacts exist. Avoid `make all` unless you intend to
@@ -88,10 +113,10 @@ written under `reports/results/` when `make train-joint` completes.
 make app
 ```
 
-The app defaults to `models/tuned_xgb.joblib`, displays raw class probabilities,
-and shows a threshold-adjusted decision only when the threshold config matches
-the selected artifact. After reviewing the regenerated comparison, choose a
-different model without editing code:
+After retraining, the app defaults to the prespecified downsampled baseline,
+displays uncalibrated class scores, and loads a threshold only when a ready
+configuration belongs to the selected artifact. Choose a different model
+without editing code:
 
 ```bash
 ROAD_ACCIDENT_MODEL=models/weighted_xgb.joblib make app
@@ -106,7 +131,7 @@ artifact message instead of loading an obsolete model.
 app/                 Streamlit interface
 configs/             Versioned model and threshold configurations
 src/                 Reusable data, modeling, evaluation, and plotting code
-scripts/             Seven reproducible pipeline entry points
+scripts/             Reproducible training, validation, and reporting entry points
 models/              Generated self-contained model artifacts
 reports/results/      CV, tuning, threshold, and held-out comparison outputs
 reports/figures/      Publication-ready diagnostics
@@ -123,7 +148,7 @@ used only to document dimensions, missingness, invalid values, and field-removal
 decisions. The figures describe patterns among recorded accidents and do not
 represent exposure-adjusted accident risk.
 
-After retraining, `make error-analysis` uses the downsampled baseline to generate
+After retraining, `make error-analysis` uses the prespecified downsampled baseline to generate
 raw and normalized confusion matrices, Fatal precision–recall analysis, its
 leakage-safe threshold tradeoff, global and Fatal-specific SHAP interpretation,
 and true-severity feature distribution overlaps. Machine-readable outputs and a
@@ -140,7 +165,7 @@ calibrated risks.
 
 ## Credits and license
 
-Original class project by Garret Fantini, Stanley Jin, and Yuliya Solyanyk at
-Penn CIS 545. Portfolio refactor and reproducibility work by Garret Fantini.
+Project, analysis, modeling, and portfolio refactor by Garret Fantini for
+Penn CIS 545 and subsequent independent development.
 
 Released under the [MIT License](LICENSE).

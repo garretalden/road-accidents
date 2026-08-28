@@ -10,16 +10,19 @@ from sklearn.model_selection import StratifiedKFold
 from src import MODELS_DIR, RANDOM_STATE, RESULTS_DIR
 from src.data import load_split
 from src.evaluation import evaluate_predictions, summarize_folds, upsert_cv_results
-from src.models import OrdinalPredictor, fit_ordinal_models, load_config
+from src.models import (
+    OrdinalPredictor,
+    fit_ordinal_models,
+    load_config,
+    load_selected_tuned_parameters,
+)
 
 
 def main() -> int:
     argparse.ArgumentParser(description=__doc__).parse_args()
     config = load_config("ordinal_xgb")
-    tuning_path = RESULTS_DIR / "xgb_tuning_results.json"
-    if not tuning_path.exists():
-        raise FileNotFoundError("Run `make train-tuned` before `make train-ordinal`")
-    parameters = json.loads(tuning_path.read_text())["selected_parameters"]
+    tuning_path = Path(config["parameter_source"])
+    parameters = load_selected_tuned_parameters(tuning_path)
     config = {**config, "parameters": parameters}
     X_train, _, y_train, _ = load_split()
     splitter = StratifiedKFold(config["cv_folds"], shuffle=True, random_state=RANDOM_STATE)
@@ -40,7 +43,9 @@ def main() -> int:
     joblib.dump(serious, ordinal_dir / "serious_or_worse.joblib")
     joblib.dump(fatal, ordinal_dir / "fatal.joblib")
     result = {
-        "selection_data": "training folds only", "parameters": parameters,
+        "selection_data": "training folds only",
+        "parameter_source": str(tuning_path),
+        "parameters": parameters,
         "validation": summarize_folds(folds),
         "artifacts": ["models/ordinal/serious_or_worse.joblib", "models/ordinal/fatal.joblib"],
     }

@@ -3,10 +3,8 @@
 A single ``ColumnTransformer`` one-hot encodes the true categorical columns
 (plus the derived ``Season``) and passes numeric columns (including
 ``Speed_limit``, which stays numeric rather than being ordinal-encoded)
-through unchanged. It must be fit on training data only — see
-``scripts/prepare_data.py`` — and can then be reused as-is by any baseline or
-experiment model; model-specific steps (e.g. scaling for Logistic Regression)
-are added downstream in that model's own ``Pipeline``.
+through unchanged. Every model receives this preprocessor inside its fitted
+pipeline so category discovery remains local to each training fold.
 """
 
 import pandas as pd
@@ -41,13 +39,18 @@ def build_preprocessor() -> ColumnTransformer:
 
 def validate_pre_accident_columns(X: pd.DataFrame) -> None:
     """Reject known post-collision variables before any estimator is fitted."""
-    forbidden = {"Number_of_Vehicles", "Number_of_Casualties", "Accident_Severity"}
+    forbidden = {
+        "Number_of_Vehicles",
+        "Number_of_Casualties",
+        "Did_Police_Officer_Attend_Scene_of_Accident",
+        "Accident_Severity",
+    }
     present = sorted(forbidden.intersection(X.columns))
     if present:
         raise ValueError(f"post-collision columns are not valid model inputs: {present}")
     missing = sorted(set(MODEL_FEATURES).difference(X.columns))
     if missing:
-        raise ValueError(f"required pre-accident columns are missing: {missing}")
+        raise ValueError(f"required prediction-time columns are missing: {missing}")
 
 
 def feature_names(preprocessor: ColumnTransformer) -> list[str]:

@@ -4,9 +4,16 @@ Garret Fantini<br>
 August 27, 2026<br>
 Extension of a course project for UPenn CIS 545: Big Data Analytics
 
+> **Retraining status — results invalidated:** A post-report audit identified
+> 34,155 duplicate substantive records that could cross the original random
+> train/test split. The pipeline now deduplicates before splitting, and all
+> prior models, thresholds, metrics, and figures have been removed. Numerical
+> model results below are retained only as a working-report draft and must be
+> regenerated before this report is treated as final.
+
 ## Executive summary
 
-I investigated how well road, time, weather, and lighting conditions available before a reported collision can distinguish Fatal, Serious, and Slight outcomes. The source file contains 1,504,150 UK Department for Transport collision records from nine represented years—2005–2007 and 2009–2014. After removing 150 records with missing retained values, the analytical cohort contains 1,504,000 collisions. Fatal outcomes account for only 1.29%, making accuracy a poor standalone measure of performance.
+I investigated how well road, time, weather, and lighting conditions available at the intended prediction time can distinguish Fatal, Serious, and Slight outcomes. The source file contains 1,504,150 UK Department for Transport rows from nine represented years—2005–2007 and 2009–2014. Removing 34,155 duplicate substantive copies and 150 remaining records with missing retained values produces an analytical cohort of 1,469,845 collisions. Fatal outcomes account for 1.30%, making accuracy a poor standalone measure of performance.
 
 This portfolio extension also corrects a leakage problem in the original course project. The earlier feature set included `Number_of_Vehicles`, which is known only after a collision. I defined a prediction-time feature contract, removed post-collision fields, discarded incompatible model artifacts and claims, and retrained every reported strategy using fold-local preprocessing and training-only model selection.
 
@@ -16,21 +23,21 @@ No model was uniformly strongest. The downsampled baseline achieved the highest 
 
 Each row represents a police-reported personal-injury collision labeled Fatal, Serious, or Slight. The task is three-class classification conditional on a collision having occurred. It is not a model of whether a collision will happen, because the dataset contains no exposure observations for journeys without collisions.
 
-Only information intended to be available before the collision is admitted to the model. This includes road type and class, speed limit, pedestrian-crossing facilities, day and time, urban or rural context, season, lighting, weather, and road-surface conditions. Geographic coordinates and administrative identifiers are not model inputs. Some contemporaneous conditions may also be unavailable at the earliest operational decision point, so the prediction-time premise would need to be checked for any proposed use.
+Only information intended to be available at prediction time is admitted to the model. This includes road type and class, speed limit, pedestrian-crossing facilities, day and time, urban or rural context, season, and contemporaneous lighting, weather, and road-surface conditions. Any application of the model must supply those contemporaneous observations. Geographic coordinates and administrative identifiers are not model inputs because the course-project scope excluded them to limit implementation complexity, not because they are inherently unavailable or post-collision leakage.
 
 The outputs are classification scores, not calibrated probabilities of fatality or crash risk. Downsampling and class weighting deliberately alter the effective training distribution, and no Platt, isotonic, or other calibration procedure was performed.
 
 ## Data and exploratory analysis
 
-The raw CSV contains 1,504,150 rows and 33 columns. There are no exact duplicate rows, although 576,763 rows repeat a previously observed `Accident_Index`; the repository does not document why identifiers recur across the combined source file. Because those rows differ in other fields and the identifier is excluded, I do not treat them as exact duplicates. Only `Time` (117 rows) and `Pedestrian_Crossing-Physical_Facilities` (34 rows) are missing among retained fields; their overlap leaves 150 rows with at least one missing retained value. Complete-case cleaning therefore removes 0.01% of the source rows and leaves 1,504,000 observations. The audit found no invalid severity, weekday, road-class, speed-limit, urban/rural, date, time, or blank retained-string values.
+The raw CSV contains 1,504,150 rows and 33 columns. Comparing every source field except the non-substantive `Unnamed: 0` export index identifies 34,155 duplicate copies, including 34,144 from 2012. Deduplication retains the first copy in source order and leaves 1,469,995 rows. The separate count of 576,763 repeated `Accident_Index` values does not measure duplicate collisions: 554,052 rows contain identifiers rendered in scientific notation, collapsing them into only 372 distinct strings. Records sharing an identifier but differing in any substantive field are retained. Only `Time` (117 rows) and `Pedestrian_Crossing-Physical_Facilities` (34 rows) are missing among retained fields; after deduplication, their overlap leaves 150 rows with at least one missing retained value. Complete-case cleaning therefore leaves 1,469,845 observations. The audit found no invalid severity, weekday, road-class, speed-limit, urban/rural, date, time, or blank retained-string values.
 
-The represented years are 2005, 2006, 2007, 2009, 2010, 2011, 2012, 2013, and 2014. The absence of 2008 and all years after 2014 means that the file should not be described as a continuous 2005–2018 panel, despite the broader range previously stated in the repository README.
+The represented years are 2005, 2006, 2007, 2009, 2010, 2011, 2012, 2013, and 2014. The absence of 2008 and all years after 2014 means that the file should not be described as a continuous 2005–2018 panel.
 
 ### Recorded accidents by severity
 
 ![Recorded accidents by Fatal, Serious, and Slight severity in the full cleaned cohort](figures/eda/severity_distribution.png)
 
-The cleaned data contains 19,439 Fatal collisions (1.29%), 204,478 Serious collisions (13.60%), and 1,280,083 Slight collisions (85.11%). A classifier that favored the dominant class could therefore achieve high accuracy while offering little value on Fatal or Serious cases. This imbalance motivates macro F1 and per-class metrics.
+After deduplication and complete-case cleaning, the data contains 19,039 Fatal collisions (1.30%), 198,894 Serious collisions (13.53%), and 1,251,912 Slight collisions (85.17%). A classifier that favored the dominant class could therefore achieve high accuracy while offering little value on Fatal or Serious cases. This imbalance motivates macro F1 and per-class metrics.
 
 ### Temporal distribution of recorded accidents
 
@@ -46,17 +53,17 @@ Most recorded collisions occur at 30 mph limits (968,203; 64.4%) and on single c
 
 ## Feature contract and leakage audit
 
-The original analysis used `Number_of_Vehicles`, which describes the collision after it occurred. It could improve apparent prediction while violating the intended pre-collision use case. I removed it together with `Number_of_Casualties` and police-attendance status, then invalidated and retrained the earlier models rather than carrying forward contaminated results.
+The original analysis used `Number_of_Vehicles`, which describes the collision after it occurred. It could improve apparent prediction while violating the intended prediction-time contract. I removed it together with `Number_of_Casualties` and police-attendance status, then invalidated and retrained the earlier models rather than carrying forward contaminated results.
 
 The final model contract retains road type; first and second road class; speed limit; physical pedestrian-crossing facilities; day of week; urban/rural context; lighting; weather; and road-surface conditions. Date and time are transformed before fitting: month maps to one of four seasons, hour maps to sine and cosine components to preserve its cyclical structure, and hours 7–9 and 16–18 produce a rush-hour indicator. Categorical inputs and season are one-hot encoded, while speed limit and the engineered time fields pass through unchanged. Every transformation is fitted inside the model pipeline.
 
-Row identifiers, coordinates, road numbers, local-authority fields, police-force codes, and LSOA identifiers are excluded as identifiers or high-cardinality geographic fields. Four excluded fields also have substantial missingness in the 1,504,150-row source file: `Carriageway_Hazards` is missing in 1,476,900 rows (98.19%), `Special_Conditions_at_Site` in 1,467,568 (97.57%), `Junction_Control` in 602,835 (40.08%), and `LSOA_of_Accident_Location` in 108,238 (7.20%). The last field is additionally a high-cardinality geographic identifier.
+Row identifiers are excluded because they are not model features. Coordinates, road numbers, local-authority fields, police-force codes, and LSOA identifiers were excluded to simplify the course-project feature contract; a future spatiotemporal experiment could add latitude/longitude numerically and encode administrative fields within training folds. Four excluded fields also have substantial missingness in the 1,504,150-row source file: `Carriageway_Hazards` is missing in 1,476,900 rows (98.19%), `Special_Conditions_at_Site` in 1,467,568 (97.57%), `Junction_Control` in 602,835 (40.08%), and `LSOA_of_Accident_Location` in 108,238 (7.20%). The last field is additionally a high-cardinality geographic identifier.
 
-`Pedestrian_Crossing-Human_Control` is excluded because it has almost no variation: 1,495,269 rows (99.41%) are recorded as `None within 50 metres`, while only 8,864 rows contain either of the other two recorded categories and 17 are missing. `Year` is excluded by design because it is a temporal index rather than a road or environmental condition expected to distinguish severity directly. Excluding it also reduces the opportunity for the model to rely on period-specific historical patterns that may not transfer to later data. Month and hour remain represented through the engineered season and time-of-day features because they describe recurring conditions relevant to the prediction task.
+`Pedestrian_Crossing-Human_Control` is excluded because it has almost no variation: 1,495,269 rows (99.41%) are recorded as `None within 50 metres`, while only 8,864 rows contain either of the other two recorded categories and 17 are missing. `Year` was excluded with the geographic fields to limit course-project complexity. This choice also happens to reduce reliance on period-specific historical patterns, but that was not the original exclusion rationale. Month and hour remain represented through the engineered season and time-of-day features because they describe recurring conditions relevant to the prediction task.
 
 ## Experimental design
 
-I created one deterministic stratified 80/20 split with random seed 42: 1,203,200 training rows and 300,800 untouched test rows. The test set contains 3,888 Fatal, 40,895 Serious, and 256,017 Slight collisions. All preprocessing, resampling, weighting, hyperparameter selection, and threshold selection occur on training data. Cross-validation fits a fresh preprocessing-and-model pipeline within each fold, preventing validation observations from influencing learned category encodings or resampling.
+The pipeline creates one deterministic stratified 80/20 split with random seed 42 after deduplication: 1,175,876 training rows and 293,969 untouched test rows. The test set contains 3,808 Fatal, 39,779 Serious, and 250,382 Slight collisions. All preprocessing, resampling, weighting, hyperparameter selection, and threshold selection occur on training data. Cross-validation fits a fresh preprocessing-and-model pipeline within each fold, preventing validation observations from influencing learned category encodings or resampling.
 
 Hyperparameter and weight searches use training-fold macro F1. Selected configurations receive fresh validation where specified and are then fitted to the complete training split. The evaluation script is the only stage that compares every frozen model on the held-out test set. Fatal thresholds are selected from five-fold out-of-fold training probabilities; test labels do not determine the threshold.
 
@@ -113,7 +120,7 @@ The differences among objectives are substantive: choosing by accuracy favors Sl
 
 ## Threshold analysis and error analysis
 
-Threshold analysis uses the downsampled baseline because it is the default macro-F1 reference. Its ordinary argmax predictions identify 158 of 3,888 Fatal test cases, for 4.1% recall and 8.3% precision. The normalized confusion matrix also shows 53.6% Serious recall and 59.8% Slight recall, illustrating that even the macro-F1 leader separates the classes weakly.
+Threshold and error analysis use the downsampled baseline as a prespecified diagnostic reference, independent of which strategy ultimately leads a held-out metric. Its historical ordinary argmax predictions identify 158 of 3,888 Fatal test cases, for 4.1% recall and 8.3% precision. The historical normalized confusion matrix also shows 53.6% Serious recall and 59.8% Slight recall, illustrating that the reference model separates the classes weakly. These values remain subject to the report-wide retraining warning above.
 
 ### Fatal precision–recall curve — downsampled baseline
 
@@ -166,6 +173,15 @@ The next steps should be time-based validation on newer data, external validatio
 ## Appendix A — Reproducibility commands
 
 Python 3.11 and the raw `UK_Accident.csv` file under `data/raw/` are required.
+The audited file has SHA-256 `a387b49d22a06191bcec5bc0c46c29094a62cd2c57a361b69dbdce94cc922799`.
+
+To regenerate every invalidated artifact in the required sequence, run:
+
+```bash
+make full-retrain
+```
+
+The individual stages are:
 
 ```bash
 make setup

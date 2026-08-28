@@ -1,5 +1,5 @@
 {
-  "status": "ready",
+  "status": "pending_retrain",
   "model_artifact": "models/baseline_xgb.joblib",
   "class_order": [
     "Fatal",
@@ -8,6 +8,5 @@
   ],
   "fatal_class_index": 0,
   "selection_data": "five-fold out-of-fold training predictions only",
-  "selection_metric": "macro_f1",
-  "threshold": 0.27
+  "selection_metric": "macro_f1"
 }

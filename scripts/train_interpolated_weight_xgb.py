@@ -16,7 +16,13 @@ import pandas as pd
 from src import MODELS_DIR, RESULTS_DIR
 from src.data import load_split
 from src.evaluation import cross_validate_pipeline, summarize_folds, upsert_cv_results
-from src.models import fit_multiclass, interpolated_fit_parameters, load_config, make_multiclass_pipeline
+from src.models import (
+    fit_multiclass,
+    interpolated_fit_parameters,
+    load_config,
+    load_selected_tuned_parameters,
+    make_multiclass_pipeline,
+)
 from src.weighting import fine_alpha_grid, select_alpha_result
 
 
@@ -72,8 +78,12 @@ def evaluate_grid(config: dict, X_train: pd.DataFrame, y_train, stage: str, alph
 def main() -> int:
     argparse.ArgumentParser(description=__doc__).parse_args()
     config = load_config("interpolated_weight_xgb")
+    parameter_source = Path(config["parameter_source"])
+    tuned_parameters = load_selected_tuned_parameters(parameter_source)
+    config = {**config, "parameters": tuned_parameters}
     progress(
-        f"[setup] loading training data for {config['cv_folds']}-fold CV; "
+        f"[setup] loaded tuned parameters from {parameter_source}; "
+        f"loading training data for {config['cv_folds']}-fold CV; "
         f"coarse alphas={config['coarse_alphas']}"
     )
     load_started = perf_counter()
@@ -111,6 +121,7 @@ def main() -> int:
         "selection_metric": "mean three-fold macro_f1",
         "tie_break": "lower alpha",
         "weight_formula": "1 + alpha * (balanced_weight - 1)",
+        "parameter_source": str(parameter_source),
         "fixed_parameters": config["parameters"],
         "coarse_winner": coarse_winner,
         "fine_grid": fine_alphas,

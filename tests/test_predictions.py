@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -26,6 +28,7 @@ from src.models import (
     cumulative_targets,
     fit_multiclass,
     load_config,
+    load_selected_tuned_parameters,
     ordinal_probabilities,
 )
 from src.preprocessing import build_preprocessor
@@ -105,6 +108,37 @@ def test_interpolated_sample_weight_endpoints_and_midpoint():
     midpoint = interpolated_sample_weight(y, 0.5)
     assert np.allclose(unweighted, 1.0)
     assert np.allclose(midpoint, 1.0 + 0.5 * (balanced - 1.0))
+
+
+def test_selected_tuned_parameters_are_loaded_and_validated(tmp_path):
+    parameters = {
+        "n_estimators": 600,
+        "learning_rate": 0.07,
+        "max_depth": 7,
+        "min_child_weight": 5,
+        "subsample": 0.7,
+        "colsample_bytree": 0.6,
+        "gamma": 0.1,
+        "reg_alpha": 0,
+        "reg_lambda": 5,
+    }
+    path = tmp_path / "tuning.json"
+    path.write_text(json.dumps({"selected_parameters": parameters}))
+
+    assert load_selected_tuned_parameters(path) == parameters
+
+
+def test_selected_tuned_parameters_require_fresh_complete_results(tmp_path):
+    with pytest.raises(FileNotFoundError, match="train-tuned"):
+        load_selected_tuned_parameters(tmp_path / "missing.json")
+    incomplete = tmp_path / "incomplete.json"
+    incomplete.write_text(json.dumps({"selected_parameters": {"n_estimators": 600}}))
+    with pytest.raises(ValueError, match="missing required"):
+        load_selected_tuned_parameters(incomplete)
+    malformed = tmp_path / "malformed.json"
+    malformed.write_text("not-json")
+    with pytest.raises(ValueError, match="not valid JSON"):
+        load_selected_tuned_parameters(malformed)
 
 
 @pytest.mark.parametrize("alpha", [-0.01, 1.01, np.nan])

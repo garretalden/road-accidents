@@ -38,6 +38,8 @@ def test_cleaning_and_audit_reconcile_removed_rows():
     assert len(cleaned) == 3
     summary = audit_summary(raw, cleaned).set_index("metric")["value"]
     assert summary["Raw rows"] == 4
+    assert summary["Duplicate substantive rows removed"] == 0
+    assert summary["Rows after substantive deduplication"] == 4
     assert summary["Rows removed by complete-case cleaning"] == 1
     assert summary["Cleaned rows"] == 3
 
@@ -68,3 +70,19 @@ def test_cramers_v_is_symmetric_bounded_and_detects_identity():
     assert value == pytest.approx(1.0)
     assert value == pytest.approx(cramers_v(right, left))
     assert 0 <= value <= 1
+
+
+def test_cleaning_deduplicates_before_dropping_source_columns():
+    raw = sample_raw()
+    raw["Unnamed: 0"] = [10, 11, 12, 13]
+    duplicate = raw.iloc[[0]].copy()
+    duplicate["Unnamed: 0"] = 999
+    combined = pd.concat([raw, duplicate], ignore_index=True)
+
+    cleaned = prepare_cleaned_data(combined)
+    summary = audit_summary(combined, cleaned).set_index("metric")["value"]
+
+    assert len(cleaned) == 3
+    assert summary["Duplicate substantive rows removed"] == 1
+    assert summary["Rows after substantive deduplication"] == 4
+    assert summary["Rows removed by complete-case cleaning"] == 1

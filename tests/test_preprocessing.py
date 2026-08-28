@@ -20,8 +20,17 @@ def test_preprocessor_contract_excludes_post_collision_fields():
     validate_pre_accident_columns(sample_frame())
 
 
-def test_preprocessor_rejects_post_collision_fields():
-    frame = sample_frame().assign(Number_of_Vehicles=2)
+@pytest.mark.parametrize(
+    "field",
+    [
+        "Number_of_Vehicles",
+        "Number_of_Casualties",
+        "Did_Police_Officer_Attend_Scene_of_Accident",
+        "Accident_Severity",
+    ],
+)
+def test_preprocessor_rejects_post_collision_fields(field):
+    frame = sample_frame().assign(**{field: 2})
     with pytest.raises(ValueError, match="post-collision"):
         validate_pre_accident_columns(frame)
 

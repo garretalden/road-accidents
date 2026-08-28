@@ -32,16 +32,33 @@ DROP_COLUMNS = [
     "Did_Police_Officer_Attend_Scene_of_Accident",
 ]
 
+# This column is an exported dataframe index, not part of a collision record.
+# It must not prevent otherwise identical source rows from being deduplicated.
+NON_SUBSTANTIVE_SOURCE_COLUMNS = {"Unnamed: 0"}
+
+
+def deduplicate_raw_records(df: pd.DataFrame) -> pd.DataFrame:
+    """Keep the first copy of each complete substantive source record.
+
+    ``Accident_Index`` is intentionally not used as the deduplication key. In
+    the distributed CSV, many identifiers have been truncated to scientific
+    notation and therefore collide across otherwise different records.
+    """
+    substantive_columns = [
+        column for column in df.columns if column not in NON_SUBSTANTIVE_SOURCE_COLUMNS
+    ]
+    return df.drop_duplicates(subset=substantive_columns, keep="first").copy()
+
 
 def load_raw(path: Path | str = RAW_DATA_PATH) -> pd.DataFrame:
-    """Read the CSV, drop non-predictive columns, and drop the ~200 rows with any NA."""
+    """Deduplicate the CSV, remove excluded fields, and drop 150 incomplete rows."""
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(
             f"Raw data not found at {path}. Run `make data` or place the "
             "UK_Accident.csv file at that path."
         )
-    df = pd.read_csv(path)
+    df = deduplicate_raw_records(pd.read_csv(path))
     df = df.drop(columns=DROP_COLUMNS, errors="ignore")
     df = df.dropna()
     return df
