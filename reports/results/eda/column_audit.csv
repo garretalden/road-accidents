@@ -1,0 +1,34 @@
+column,dtype,missing_count,missing_percent,unique_nonmissing,status,reason
+Unnamed: 0,int64,0,0.0,570011,Removed,Row index or collision identifier; not an analytical feature
+Accident_Index,object,0,0.0,927387,Removed,Row index or collision identifier; not an analytical feature
+Location_Easting_OSGR,float64,101,0.006714755842169996,182519,Removed,Geographic coordinate excluded from the analytical feature contract
+Location_Northing_OSGR,float64,0,0.0,221878,Removed,Geographic coordinate excluded from the analytical feature contract
+Longitude,float64,101,0.006714755842169996,1059046,Removed,Geographic coordinate excluded from the analytical feature contract
+Latitude,float64,0,0.0,1001149,Removed,Geographic coordinate excluded from the analytical feature contract
+Police_Force,int64,0,0.0,51,Removed,High-cardinality geographic or administrative identifier
+Accident_Severity,int64,0,0.0,3,Retained,Retained for cleaning or EDA
+Number_of_Vehicles,int64,0,0.0,27,Removed,Post-collision field excluded to prevent target leakage
+Number_of_Casualties,int64,0,0.0,47,Removed,Post-collision field excluded to prevent target leakage
+Date,object,0,0.0,3286,Retained,Retained for cleaning or EDA
+Day_of_Week,int64,0,0.0,7,Retained,Retained for cleaning or EDA
+Time,object,117,0.0077784795399395,1439,Retained,Retained for cleaning or EDA
+Local_Authority_(District),int64,0,0.0,416,Removed,High-cardinality geographic or administrative identifier
+Local_Authority_(Highway),object,0,0.0,207,Removed,High-cardinality geographic or administrative identifier
+1st_Road_Class,int64,0,0.0,6,Retained,Retained for cleaning or EDA
+1st_Road_Number,int64,0,0.0,6854,Removed,High-cardinality geographic or administrative identifier
+Road_Type,object,0,0.0,6,Retained,Retained for cleaning or EDA
+Speed_limit,int64,0,0.0,8,Retained,Retained for cleaning or EDA
+Junction_Control,object,602835,40.078117209054945,4,Removed,Excluded by the current analytical feature contract; no narrower rationale documented
+2nd_Road_Class,int64,0,0.0,7,Retained,Retained for cleaning or EDA
+2nd_Road_Number,int64,0,0.0,7235,Removed,High-cardinality geographic or administrative identifier
+Pedestrian_Crossing-Human_Control,object,17,0.0011302064288800985,3,Removed,Excluded by the current analytical feature contract; no narrower rationale documented
+Pedestrian_Crossing-Physical_Facilities,object,34,0.002260412857760197,6,Retained,Retained for cleaning or EDA
+Light_Conditions,object,0,0.0,5,Retained,Retained for cleaning or EDA
+Weather_Conditions,object,0,0.0,9,Retained,Retained for cleaning or EDA
+Road_Surface_Conditions,object,0,0.0,6,Retained,Retained for cleaning or EDA
+Special_Conditions_at_Site,object,1467568,97.56792873051225,7,Removed,Excluded by the current analytical feature contract; no narrower rationale documented
+Carriageway_Hazards,object,1476900,98.18834557723632,5,Removed,Excluded by the current analytical feature contract; no narrower rationale documented
+Urban_or_Rural_Area,int64,0,0.0,3,Retained,Retained for cleaning or EDA
+Did_Police_Officer_Attend_Scene_of_Accident,object,0,0.0,2,Removed,Post-collision field excluded to prevent target leakage
+LSOA_of_Accident_Location,object,108238,7.195957849948476,35452,Removed,High-cardinality geographic or administrative identifier
+Year,int64,0,0.0,9,Removed,Excluded by the current analytical feature contract; no narrower rationale documented

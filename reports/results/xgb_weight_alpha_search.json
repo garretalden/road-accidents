@@ -1,0 +1,195 @@
+{
+  "selection_data": "training folds only",
+  "selection_metric": "mean three-fold macro_f1",
+  "tie_break": "lower alpha",
+  "weight_formula": "1 + alpha * (balanced_weight - 1)",
+  "parameter_source": "reports/results/xgb_tuning_results.json",
+  "fixed_parameters": {
+    "n_estimators": 600,
+    "subsample": 0.7,
+    "reg_lambda": 5,
+    "reg_alpha": 0,
+    "min_child_weight": 5,
+    "max_depth": 7,
+    "learning_rate": 0.07,
+    "gamma": 0.1,
+    "colsample_bytree": 0.6
+  },
+  "coarse_winner": {
+    "stage": "coarse",
+    "alpha": 0.8,
+    "macro_f1_mean": 0.3393929010070333,
+    "macro_f1_std": 0.001102371360147533,
+    "fatal_precision_mean": 0.040470191082124296,
+    "fatal_recall_mean": 0.48736130260652616,
+    "fatal_f1_mean": 0.07473422801361056,
+    "serious_f1_mean": 0.09654480827709903,
+    "slight_f1_mean": 0.8468996667303904
+  },
+  "fine_grid": [
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9,
+    0.95
+  ],
+  "selected_alpha": 0.9,
+  "selected_result": {
+    "stage": "fine",
+    "alpha": 0.9,
+    "macro_f1_mean": 0.3416993935796568,
+    "macro_f1_std": 0.0014606674749330318,
+    "fatal_precision_mean": 0.03754147130257931,
+    "fatal_recall_mean": 0.5271485785568905,
+    "fatal_f1_mean": 0.07009120234683497,
+    "serious_f1_mean": 0.1512812229066959,
+    "slight_f1_mean": 0.8037257554854395
+  },
+  "search": [
+    {
+      "stage": "coarse",
+      "alpha": 0.0,
+      "macro_f1_mean": 0.3066538160811849,
+      "macro_f1_std": 4.5987793796175773e-07,
+      "fatal_precision_mean": 0.0,
+      "fatal_recall_mean": 0.0,
+      "fatal_f1_mean": 0.0,
+      "serious_f1_mean": 3.770478411166829e-05,
+      "slight_f1_mean": 0.9199237434594432
+    },
+    {
+      "stage": "coarse",
+      "alpha": 0.2,
+      "macro_f1_mean": 0.31771480418389947,
+      "macro_f1_std": 0.0006387615388568126,
+      "fatal_precision_mean": 0.09204861554469751,
+      "fatal_recall_mean": 0.020484538113058892,
+      "fatal_f1_mean": 0.03349899325861466,
+      "serious_f1_mean": 0.00036419059206168627,
+      "slight_f1_mean": 0.919281228701022
+    },
+    {
+      "stage": "coarse",
+      "alpha": 0.4,
+      "macro_f1_mean": 0.3367773811518005,
+      "macro_f1_std": 0.0018744887783297662,
+      "fatal_precision_mean": 0.06281506844210824,
+      "fatal_recall_mean": 0.18521436543890749,
+      "fatal_f1_mean": 0.0937914459977247,
+      "serious_f1_mean": 0.006991237624168418,
+      "slight_f1_mean": 0.9095494598335084
+    },
+    {
+      "stage": "coarse",
+      "alpha": 0.6,
+      "macro_f1_mean": 0.3342699240031865,
+      "macro_f1_std": 0.0007874859943278005,
+      "fatal_precision_mean": 0.049210881406649386,
+      "fatal_recall_mean": 0.36543890749130065,
+      "fatal_f1_mean": 0.08674012652673209,
+      "serious_f1_mean": 0.02856530812120296,
+      "slight_f1_mean": 0.8875043373616246
+    },
+    {
+      "stage": "coarse",
+      "alpha": 0.8,
+      "macro_f1_mean": 0.3393929010070333,
+      "macro_f1_std": 0.001102371360147533,
+      "fatal_precision_mean": 0.040470191082124296,
+      "fatal_recall_mean": 0.48736130260652616,
+      "fatal_f1_mean": 0.07473422801361056,
+      "serious_f1_mean": 0.09654480827709903,
+      "slight_f1_mean": 0.8468996667303904
+    },
+    {
+      "stage": "coarse",
+      "alpha": 1.0,
+      "macro_f1_mean": 0.32502802721177854,
+      "macro_f1_std": 0.001131376142892902,
+      "fatal_precision_mean": 0.03500347555365735,
+      "fatal_recall_mean": 0.5549208850370954,
+      "fatal_f1_mean": 0.06585293049666519,
+      "serious_f1_mean": 0.1980073341460454,
+      "slight_f1_mean": 0.711223816992625
+    },
+    {
+      "stage": "fine",
+      "alpha": 0.65,
+      "macro_f1_mean": 0.3341035381890017,
+      "macro_f1_std": 0.0008911989157675989,
+      "fatal_precision_mean": 0.0467334078142394,
+      "fatal_recall_mean": 0.4014838159017793,
+      "fatal_f1_mean": 0.0837209089679607,
+      "serious_f1_mean": 0.03855906692469318,
+      "slight_f1_mean": 0.8800306386743513
+    },
+    {
+      "stage": "fine",
+      "alpha": 0.7,
+      "macro_f1_mean": 0.33521428229017275,
+      "macro_f1_std": 0.0010100028420212302,
+      "fatal_precision_mean": 0.04440837599692759,
+      "fatal_recall_mean": 0.4346398791937496,
+      "fatal_f1_mean": 0.0805821015026482,
+      "serious_f1_mean": 0.054042546932250225,
+      "slight_f1_mean": 0.8710181984356198
+    },
+    {
+      "stage": "fine",
+      "alpha": 0.75,
+      "macro_f1_mean": 0.33696265233922307,
+      "macro_f1_std": 0.0009582268577363619,
+      "fatal_precision_mean": 0.04239428026269907,
+      "fatal_recall_mean": 0.4637252970914582,
+      "fatal_f1_mean": 0.07768552634819022,
+      "serious_f1_mean": 0.07271917362844037,
+      "slight_f1_mean": 0.8604832570410386
+    },
+    {
+      "stage": "fine",
+      "alpha": 0.8,
+      "macro_f1_mean": 0.3393929010070333,
+      "macro_f1_std": 0.001102371360147533,
+      "fatal_precision_mean": 0.040470191082124296,
+      "fatal_recall_mean": 0.48736130260652616,
+      "fatal_f1_mean": 0.07473422801361056,
+      "serious_f1_mean": 0.09654480827709903,
+      "slight_f1_mean": 0.8468996667303904
+    },
+    {
+      "stage": "fine",
+      "alpha": 0.85,
+      "macro_f1_mean": 0.34097352551704185,
+      "macro_f1_std": 0.001756696937526376,
+      "fatal_precision_mean": 0.038897949227492214,
+      "fatal_recall_mean": 0.5091589521370888,
+      "fatal_f1_mean": 0.07227408490876061,
+      "serious_f1_mean": 0.12175064841282036,
+      "slight_f1_mean": 0.8288958432295446
+    },
+    {
+      "stage": "fine",
+      "alpha": 0.9,
+      "macro_f1_mean": 0.3416993935796568,
+      "macro_f1_std": 0.0014606674749330318,
+      "fatal_precision_mean": 0.03754147130257931,
+      "fatal_recall_mean": 0.5271485785568905,
+      "fatal_f1_mean": 0.07009120234683497,
+      "serious_f1_mean": 0.1512812229066959,
+      "slight_f1_mean": 0.8037257554854395
+    },
+    {
+      "stage": "fine",
+      "alpha": 0.95,
+      "macro_f1_mean": 0.33741830366505005,
+      "macro_f1_std": 0.0011287724081201686,
+      "fatal_precision_mean": 0.036351879402746076,
+      "fatal_recall_mean": 0.5452038605475674,
+      "fatal_f1_mean": 0.06815904137531482,
+      "serious_f1_mean": 0.17873740660239668,
+      "slight_f1_mean": 0.7653584630174387
+    }
+  ]
+}

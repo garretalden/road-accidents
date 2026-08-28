@@ -1,0 +1,16 @@
+rank,feature,mean_abs_fatal_shap,distribution_kind,class_a,class_b,overlap,figure
+1,Speed_limit,0.3987876079798443,categorical,Fatal,Serious,0.7400027549796659,reports/figures/feature_distributions/speed_limit.png
+1,Speed_limit,0.3987876079798443,categorical,Fatal,Slight,0.6762358985218484,reports/figures/feature_distributions/speed_limit.png
+1,Speed_limit,0.3987876079798443,categorical,Serious,Slight,0.9228926193435872,reports/figures/feature_distributions/speed_limit.png
+2,2nd_Road_Class,0.21323398728989532,categorical,Fatal,Serious,0.8280097723747233,reports/figures/feature_distributions/2nd_road_class.png
+2,2nd_Road_Class,0.21323398728989532,categorical,Fatal,Slight,0.7534572383482073,reports/figures/feature_distributions/2nd_road_class.png
+2,2nd_Road_Class,0.21323398728989532,categorical,Serious,Slight,0.9238683500766415,reports/figures/feature_distributions/2nd_road_class.png
+3,Hour_of_Day,0.20372098410055967,numeric,Fatal,Serious,0.8876345973795134,reports/figures/feature_distributions/hour_of_day.png
+3,Hour_of_Day,0.20372098410055967,numeric,Fatal,Slight,0.8314769171361622,reports/figures/feature_distributions/hour_of_day.png
+3,Hour_of_Day,0.20372098410055967,numeric,Serious,Slight,0.9371790168831784,reports/figures/feature_distributions/hour_of_day.png
+4,1st_Road_Class,0.14436471203450793,categorical,Fatal,Serious,0.8638310172104238,reports/figures/feature_distributions/1st_road_class.png
+4,1st_Road_Class,0.14436471203450793,categorical,Fatal,Slight,0.859464435821057,reports/figures/feature_distributions/1st_road_class.png
+4,1st_Road_Class,0.14436471203450793,categorical,Serious,Slight,0.9800904598878523,reports/figures/feature_distributions/1st_road_class.png
+5,Road_Type,0.11505184645792614,categorical,Fatal,Serious,0.9430064274760911,reports/figures/feature_distributions/road_type.png
+5,Road_Type,0.11505184645792614,categorical,Fatal,Slight,0.9248935819345351,reports/figures/feature_distributions/road_type.png
+5,Road_Type,0.11505184645792614,categorical,Serious,Slight,0.9392669674484843,reports/figures/feature_distributions/road_type.png

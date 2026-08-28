@@ -1,0 +1,110 @@
+{
+  "selection_data": "training folds only",
+  "parameter_source": "reports/results/xgb_tuning_results.json",
+  "parameters": {
+    "n_estimators": 600,
+    "subsample": 0.7,
+    "reg_lambda": 5,
+    "reg_alpha": 0,
+    "min_child_weight": 5,
+    "max_depth": 7,
+    "learning_rate": 0.07,
+    "gamma": 0.1,
+    "colsample_bytree": 0.6
+  },
+  "validation": {
+    "macro_f1": {
+      "mean": 0.2997372453798415,
+      "std": 0.0003622909853367266
+    },
+    "accuracy": {
+      "mean": 0.6559160996234802,
+      "std": 0.0008447639566646867
+    },
+    "per_class": {
+      "Fatal": {
+        "precision": {
+          "mean": 0.03240557613472589,
+          "std": 0.0006183692446871432
+        },
+        "recall": {
+          "mean": 0.6352184564820655,
+          "std": 0.014471642752472133
+        },
+        "f1": {
+          "mean": 0.06166526170567234,
+          "std": 0.0011873092334763553
+        }
+      },
+      "Serious": {
+        "precision": {
+          "mean": 0.16333540689429393,
+          "std": 0.007745623192575258
+        },
+        "recall": {
+          "mean": 0.012732929013606512,
+          "std": 0.0005467201639267035
+        },
+        "f1": {
+          "mean": 0.023623366723063272,
+          "std": 0.0010090868820664975
+        }
+      },
+      "Slight": {
+        "precision": {
+          "mean": 0.8781996673397721,
+          "std": 0.00020034155643790355
+        },
+        "recall": {
+          "mean": 0.758414625622797,
+          "std": 0.0012206349847079631
+        },
+        "f1": {
+          "mean": 0.813923107710789,
+          "std": 0.0006856761010021009
+        }
+      }
+    }
+  },
+  "artifacts": [
+    "models/ordinal/serious_or_worse.joblib",
+    "models/ordinal/fatal.joblib"
+  ],
+  "untouched_test": {
+    "name": "Ordinal cumulative XGBoost",
+    "accuracy": 0.6517932162915138,
+    "macro_f1": 0.2969234262419492,
+    "per_class_precision": [
+      0.03181931130089063,
+      0.16387413158970168,
+      0.8777730762255939
+    ],
+    "per_class_recall": [
+      0.6389180672268907,
+      0.010080695844541089,
+      0.7539399797110016
+    ],
+    "per_class_f1": [
+      0.06061965093246627,
+      0.018993037465068915,
+      0.8111575903283123
+    ],
+    "confusion_matrix": [
+      [
+        2433,
+        36,
+        1339
+      ],
+      [
+        14431,
+        401,
+        24947
+      ],
+      [
+        59599,
+        2010,
+        188773
+      ]
+    ]
+  }
+}

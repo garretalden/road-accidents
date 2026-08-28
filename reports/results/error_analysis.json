@@ -1,0 +1,381 @@
+{
+  "model": {
+    "name": "XGBoost baseline (downsampled)",
+    "artifact": "models/baseline_xgb.joblib",
+    "sha256": "87dcac4fde56052f0439e8408a6fe61364b4289105811bb4483058834eb015ed"
+  },
+  "evaluation": {
+    "split": "frozen untouched stratified 20% test split",
+    "rows": 293969,
+    "random_state": 42,
+    "class_order": [
+      "Fatal",
+      "Serious",
+      "Slight"
+    ],
+    "class_counts": {
+      "Fatal": 3808,
+      "Serious": 39779,
+      "Slight": 250382
+    },
+    "confusion_matrix_policy": "downsampled-baseline XGB multiclass predict/argmax"
+  },
+  "test_metrics": {
+    "name": "XGBoost baseline (downsampled)",
+    "accuracy": 0.5864053692736308,
+    "macro_f1": 0.3410755195970963,
+    "per_class_precision": [
+      0.08031272210376687,
+      0.17346730050155867,
+      0.8868635635159648
+    ],
+    "per_class_recall": [
+      0.02967436974789916,
+      0.5329696573568968,
+      0.6033620627680903
+    ],
+    "per_class_f1": [
+      0.04333652924256951,
+      0.2617439721478043,
+      0.7181460574009151
+    ],
+    "confusion_matrix": [
+      [
+        113,
+        2681,
+        1014
+      ],
+      [
+        320,
+        21201,
+        18258
+      ],
+      [
+        974,
+        98337,
+        151071
+      ]
+    ]
+  },
+  "fatal_threshold": {
+    "status": "ready",
+    "model_artifact": "models/baseline_xgb.joblib",
+    "class_order": [
+      "Fatal",
+      "Serious",
+      "Slight"
+    ],
+    "fatal_class_index": 0,
+    "selection_data": "five-fold out-of-fold training predictions only",
+    "selection_metric": "macro_f1",
+    "threshold": 0.255
+  },
+  "fatal_precision_recall": {
+    "average_precision": 0.044637508981842496,
+    "selected_threshold": 0.255,
+    "precision_at_selected_threshold": 0.05804416403785489,
+    "recall_at_selected_threshold": 0.2657563025210084
+  },
+  "threshold_tradeoff_source": "reports/results/baseline_threshold_results.csv (training OOF only)",
+  "shap": {
+    "sample_rows": 2000,
+    "random_state": 42,
+    "source_feature_ranking": [
+      {
+        "source_feature": "Speed_limit",
+        "mean_abs_fatal_shap": 0.3987876079798443,
+        "components": [
+          "Speed_limit"
+        ]
+      },
+      {
+        "source_feature": "2nd_Road_Class",
+        "mean_abs_fatal_shap": 0.21323398728989532,
+        "components": [
+          "2nd_Road_Class_-1",
+          "2nd_Road_Class_1",
+          "2nd_Road_Class_2",
+          "2nd_Road_Class_3",
+          "2nd_Road_Class_4",
+          "2nd_Road_Class_5",
+          "2nd_Road_Class_6"
+        ]
+      },
+      {
+        "source_feature": "Hour_of_Day",
+        "mean_abs_fatal_shap": 0.20372098410055967,
+        "components": [
+          "hour_sin",
+          "hour_cos"
+        ]
+      },
+      {
+        "source_feature": "1st_Road_Class",
+        "mean_abs_fatal_shap": 0.14436471203450793,
+        "components": [
+          "1st_Road_Class_1",
+          "1st_Road_Class_2",
+          "1st_Road_Class_3",
+          "1st_Road_Class_4",
+          "1st_Road_Class_5",
+          "1st_Road_Class_6"
+        ]
+      },
+      {
+        "source_feature": "Road_Type",
+        "mean_abs_fatal_shap": 0.11505184645792614,
+        "components": [
+          "Road_Type_Dual carriageway",
+          "Road_Type_One way street",
+          "Road_Type_Roundabout",
+          "Road_Type_Single carriageway",
+          "Road_Type_Slip road",
+          "Road_Type_Unknown"
+        ]
+      },
+      {
+        "source_feature": "Urban_or_Rural_Area",
+        "mean_abs_fatal_shap": 0.10960439374920135,
+        "components": [
+          "Urban_or_Rural_Area_1",
+          "Urban_or_Rural_Area_2",
+          "Urban_or_Rural_Area_3"
+        ]
+      },
+      {
+        "source_feature": "Light_Conditions",
+        "mean_abs_fatal_shap": 0.10793028702464573,
+        "components": [
+          "Light_Conditions_Darkeness: No street lighting",
+          "Light_Conditions_Darkness: Street lighting unknown",
+          "Light_Conditions_Darkness: Street lights present and lit",
+          "Light_Conditions_Darkness: Street lights present but unlit",
+          "Light_Conditions_Daylight: Street light present"
+        ]
+      },
+      {
+        "source_feature": "Weather_Conditions",
+        "mean_abs_fatal_shap": 0.0939646793999057,
+        "components": [
+          "Weather_Conditions_Fine with high winds",
+          "Weather_Conditions_Fine without high winds",
+          "Weather_Conditions_Fog or mist",
+          "Weather_Conditions_Other",
+          "Weather_Conditions_Raining with high winds",
+          "Weather_Conditions_Raining without high winds",
+          "Weather_Conditions_Snowing with high winds",
+          "Weather_Conditions_Snowing without high winds",
+          "Weather_Conditions_Unknown"
+        ]
+      },
+      {
+        "source_feature": "Day_of_Week",
+        "mean_abs_fatal_shap": 0.07211497725696041,
+        "components": [
+          "Day_of_Week_1",
+          "Day_of_Week_2",
+          "Day_of_Week_3",
+          "Day_of_Week_4",
+          "Day_of_Week_5",
+          "Day_of_Week_6",
+          "Day_of_Week_7"
+        ]
+      },
+      {
+        "source_feature": "Road_Surface_Conditions",
+        "mean_abs_fatal_shap": 0.06287594349158826,
+        "components": [
+          "Road_Surface_Conditions_Dry",
+          "Road_Surface_Conditions_Flood (Over 3cm of water)",
+          "Road_Surface_Conditions_Frost/Ice",
+          "Road_Surface_Conditions_Normal",
+          "Road_Surface_Conditions_Snow",
+          "Road_Surface_Conditions_Wet/Damp"
+        ]
+      },
+      {
+        "source_feature": "Pedestrian_Crossing-Physical_Facilities",
+        "mean_abs_fatal_shap": 0.05477363800134811,
+        "components": [
+          "Pedestrian_Crossing-Physical_Facilities_Central refuge",
+          "Pedestrian_Crossing-Physical_Facilities_Footbridge or subway",
+          "Pedestrian_Crossing-Physical_Facilities_No physical crossing within 50 meters",
+          "Pedestrian_Crossing-Physical_Facilities_Pedestrian phase at traffic signal junction",
+          "Pedestrian_Crossing-Physical_Facilities_Zebra crossing",
+          "Pedestrian_Crossing-Physical_Facilities_non-junction pedestrian crossing"
+        ]
+      },
+      {
+        "source_feature": "Season",
+        "mean_abs_fatal_shap": 0.027593957438471192,
+        "components": [
+          "Season_Fall",
+          "Season_Spring",
+          "Season_Summer",
+          "Season_Winter"
+        ]
+      },
+      {
+        "source_feature": "rush_hour",
+        "mean_abs_fatal_shap": 0.014949417486808671,
+        "components": [
+          "rush_hour"
+        ]
+      }
+    ]
+  },
+  "feature_distributions": [
+    {
+      "rank": 1,
+      "source_feature": "Speed_limit",
+      "mean_abs_fatal_shap": 0.3987876079798443,
+      "components": [
+        "Speed_limit"
+      ],
+      "distribution_kind": "categorical",
+      "figure": "reports/figures/feature_distributions/speed_limit.png",
+      "pairwise_overlaps": [
+        {
+          "class_a": "Fatal",
+          "class_b": "Serious",
+          "overlap": 0.7400027549796659
+        },
+        {
+          "class_a": "Fatal",
+          "class_b": "Slight",
+          "overlap": 0.6762358985218484
+        },
+        {
+          "class_a": "Serious",
+          "class_b": "Slight",
+          "overlap": 0.9228926193435872
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "source_feature": "2nd_Road_Class",
+      "mean_abs_fatal_shap": 0.21323398728989532,
+      "components": [
+        "2nd_Road_Class_-1",
+        "2nd_Road_Class_1",
+        "2nd_Road_Class_2",
+        "2nd_Road_Class_3",
+        "2nd_Road_Class_4",
+        "2nd_Road_Class_5",
+        "2nd_Road_Class_6"
+      ],
+      "distribution_kind": "categorical",
+      "figure": "reports/figures/feature_distributions/2nd_road_class.png",
+      "pairwise_overlaps": [
+        {
+          "class_a": "Fatal",
+          "class_b": "Serious",
+          "overlap": 0.8280097723747233
+        },
+        {
+          "class_a": "Fatal",
+          "class_b": "Slight",
+          "overlap": 0.7534572383482073
+        },
+        {
+          "class_a": "Serious",
+          "class_b": "Slight",
+          "overlap": 0.9238683500766415
+        }
+      ]
+    },
+    {
+      "rank": 3,
+      "source_feature": "Hour_of_Day",
+      "mean_abs_fatal_shap": 0.20372098410055967,
+      "components": [
+        "hour_sin",
+        "hour_cos"
+      ],
+      "distribution_kind": "numeric",
+      "figure": "reports/figures/feature_distributions/hour_of_day.png",
+      "pairwise_overlaps": [
+        {
+          "class_a": "Fatal",
+          "class_b": "Serious",
+          "overlap": 0.8876345973795134
+        },
+        {
+          "class_a": "Fatal",
+          "class_b": "Slight",
+          "overlap": 0.8314769171361622
+        },
+        {
+          "class_a": "Serious",
+          "class_b": "Slight",
+          "overlap": 0.9371790168831784
+        }
+      ]
+    },
+    {
+      "rank": 4,
+      "source_feature": "1st_Road_Class",
+      "mean_abs_fatal_shap": 0.14436471203450793,
+      "components": [
+        "1st_Road_Class_1",
+        "1st_Road_Class_2",
+        "1st_Road_Class_3",
+        "1st_Road_Class_4",
+        "1st_Road_Class_5",
+        "1st_Road_Class_6"
+      ],
+      "distribution_kind": "categorical",
+      "figure": "reports/figures/feature_distributions/1st_road_class.png",
+      "pairwise_overlaps": [
+        {
+          "class_a": "Fatal",
+          "class_b": "Serious",
+          "overlap": 0.8638310172104238
+        },
+        {
+          "class_a": "Fatal",
+          "class_b": "Slight",
+          "overlap": 0.859464435821057
+        },
+        {
+          "class_a": "Serious",
+          "class_b": "Slight",
+          "overlap": 0.9800904598878523
+        }
+      ]
+    },
+    {
+      "rank": 5,
+      "source_feature": "Road_Type",
+      "mean_abs_fatal_shap": 0.11505184645792614,
+      "components": [
+        "Road_Type_Dual carriageway",
+        "Road_Type_One way street",
+        "Road_Type_Roundabout",
+        "Road_Type_Single carriageway",
+        "Road_Type_Slip road",
+        "Road_Type_Unknown"
+      ],
+      "distribution_kind": "categorical",
+      "figure": "reports/figures/feature_distributions/road_type.png",
+      "pairwise_overlaps": [
+        {
+          "class_a": "Fatal",
+          "class_b": "Serious",
+          "overlap": 0.9430064274760911
+        },
+        {
+          "class_a": "Fatal",
+          "class_b": "Slight",
+          "overlap": 0.9248935819345351
+        },
+        {
+          "class_a": "Serious",
+          "class_b": "Slight",
+          "overlap": 0.9392669674484843
+        }
+      ]
+    }
+  ]
+}
