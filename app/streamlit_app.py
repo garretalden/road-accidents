@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from src import CLASS_NAMES
+from src.category_labels import format_category_option
 from src.deployment import DEFAULT_MODEL_ARTIFACT, matching_threshold_config
 from src.evaluation import apply_fatal_threshold
 from src.features import hour_to_cyclical, is_rush_hour, month_to_season
@@ -44,8 +45,17 @@ def main() -> None:
         left, right = st.columns(2)
         with left:
             speed = st.selectbox("Speed limit (mph)", SPEED_LIMITS, index=3)
-            area = st.selectbox("Urban or rural area", categories(model, "Urban_or_Rural_Area"))
-            day = st.selectbox("Day of week (1=Sunday)", categories(model, "Day_of_Week"), index=3)
+            area = st.selectbox(
+                "Urban or rural area",
+                categories(model, "Urban_or_Rural_Area"),
+                format_func=lambda value: format_category_option("Urban_or_Rural_Area", value),
+            )
+            day = st.selectbox(
+                "Day of week",
+                categories(model, "Day_of_Week"),
+                index=3,
+                format_func=lambda value: format_category_option("Day_of_Week", value),
+            )
             hour = st.slider("Hour of day", 0, 23, 17)
             month = st.slider("Month", 1, 12, 6)
         with right:
@@ -53,8 +63,16 @@ def main() -> None:
             weather = st.selectbox("Weather conditions", categories(model, "Weather_Conditions"))
             surface = st.selectbox("Road surface", categories(model, "Road_Surface_Conditions"))
             road_type = st.selectbox("Road type", categories(model, "Road_Type"))
-            first_class = st.selectbox("Primary road class", categories(model, "1st_Road_Class"))
-            second_class = st.selectbox("Secondary road class", categories(model, "2nd_Road_Class"))
+            first_class = st.selectbox(
+                "Primary road class",
+                categories(model, "1st_Road_Class"),
+                format_func=lambda value: format_category_option("1st_Road_Class", value),
+            )
+            second_class = st.selectbox(
+                "Secondary road class",
+                categories(model, "2nd_Road_Class"),
+                format_func=lambda value: format_category_option("2nd_Road_Class", value),
+            )
             crossing = st.selectbox(
                 "Physical pedestrian crossing", categories(model, "Pedestrian_Crossing-Physical_Facilities")
             )

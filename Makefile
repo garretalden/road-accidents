@@ -46,7 +46,7 @@ error-analysis: data
 report: evaluate error-analysis
 
 app:
-	uv run streamlit run app/streamlit_app.py
+	uv run python -m streamlit run app/streamlit_app.py
 
 all: full-retrain
 
