@@ -11,19 +11,19 @@ class-weighted model, a tuned class-weighted model, a tuned model with optimized
 class-weight interpolation, a joint hyperparameter-and-weight tuning experiment,
 and a cumulative-binary ordinal formulation.
 
-> **Retraining required:** the raw CSV contains 34,155 duplicate substantive
-> records that were previously hidden by its exported row-index column. The
-> preprocessing pipeline now removes those copies before splitting. Previous
-> model artifacts, metrics, thresholds, and figures have been invalidated.
+> **Retraining complete:** the pipeline removes 34,155 duplicate substantive
+> records before splitting. All models, evaluations, thresholds, figures, and
+> error-analysis outputs have been regenerated from the deduplicated cohort.
 
-## Why this version requires retraining
+## Data and leakage corrections
 
 An audit found that the earlier models included `Number_of_Vehicles`, meaning
 vehicles involved in the collision. That value is not available before a
 collision and violated the project's prediction premise. It has now been
 removed from data cleaning, preprocessing, the app, tests, and every model
 configuration. The incompatible model binaries and performance claims were
-deleted rather than presented as valid results.
+discarded, and every reported strategy was retrained using only the corrected
+prediction-time feature contract.
 
 A later data audit also found 34,155 complete duplicate copies when all source
 fields except the non-substantive `Unnamed: 0` export index were compared. The
@@ -31,6 +31,21 @@ much larger repeated-`Accident_Index` count is not a valid duplicate count:
 many identifiers were truncated to scientific notation in the distributed
 CSV. Deduplication therefore compares complete substantive records and runs
 before feature removal, missing-value cleaning, or train/test splitting.
+
+## Current results
+
+No model is uniformly strongest. On the untouched deduplicated test split, the
+downsampled baseline has the highest default macro F1 at 0.341. The jointly
+tuned model has the highest default Fatal F1 at 0.086 and 0.776 accuracy, but
+its Serious F1 is only 0.038.
+
+Applying the baseline's Fatal threshold of 0.255, selected from out-of-fold
+training predictions, raises held-out macro F1 to 0.351 and Fatal F1 to 0.095.
+This operating point retrieves 26.6% of Fatal cases at 5.8% precision, so 94.2%
+of Fatal alerts are false positives. The results therefore describe a tradeoff
+map, not a model suitable for autonomous severity decisions. See the
+[modeling report](reports/modeling_report.md) for the full comparison and
+[`reports/results/`](reports/results/) for machine-readable outputs.
 
 ## Modeling safeguards
 
@@ -113,17 +128,16 @@ written under `reports/results/` when `make train-joint` completes.
 make app
 ```
 
-After retraining, the app defaults to the prespecified downsampled baseline,
-displays uncalibrated class scores, and loads a threshold only when a ready
-configuration belongs to the selected artifact. Choose a different model
-without editing code:
+The app defaults to the prespecified downsampled baseline, displays uncalibrated
+class scores, and loads a threshold only when a ready configuration belongs to
+the selected artifact. Choose a different model without editing code:
 
 ```bash
 ROAD_ACCIDENT_MODEL=models/weighted_xgb.joblib make app
 ```
 
-Until retraining is complete, the app intentionally displays a clear missing-
-artifact message instead of loading an obsolete model.
+If the selected artifact is absent, the app displays a clear missing-artifact
+message instead of attempting a prediction.
 
 ## Repository layout
 
@@ -148,8 +162,8 @@ used only to document dimensions, missingness, invalid values, and field-removal
 decisions. The figures describe patterns among recorded accidents and do not
 represent exposure-adjusted accident risk.
 
-After retraining, `make error-analysis` uses the prespecified downsampled baseline to generate
-raw and normalized confusion matrices, Fatal precision–recall analysis, its
+`make error-analysis` uses the prespecified downsampled baseline to generate raw
+and normalized confusion matrices, Fatal precision–recall analysis, its
 leakage-safe threshold tradeoff, global and Fatal-specific SHAP interpretation,
 and true-severity feature distribution overlaps. Machine-readable outputs and a
 generated Markdown companion live under `reports/results/`. The manually curated

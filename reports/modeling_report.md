@@ -1,15 +1,14 @@
 # UK road-accident severity modeling report
 
 Garret Fantini<br>
-August 27, 2026<br>
+August 28, 2026<br>
 Extension of a course project for UPenn CIS 545: Big Data Analytics
 
-> **Retraining status — results invalidated:** A post-report audit identified
-> 34,155 duplicate substantive records that could cross the original random
-> train/test split. The pipeline now deduplicates before splitting, and all
-> prior models, thresholds, metrics, and figures have been removed. Numerical
-> model results below are retained only as a working-report draft and must be
-> regenerated before this report is treated as final.
+> **Retraining status — complete:** A post-report audit identified 34,155
+> duplicate substantive records that could cross the original random train/test
+> split. The pipeline now deduplicates before splitting, and every model,
+> threshold, metric, and figure reported below was regenerated from the
+> deduplicated cohort.
 
 ## Executive summary
 
@@ -17,7 +16,7 @@ I investigated how well road, time, weather, and lighting conditions available a
 
 This portfolio extension also corrects a leakage problem in the original course project. The earlier feature set included `Number_of_Vehicles`, which is known only after a collision. I defined a prediction-time feature contract, removed post-collision fields, discarded incompatible model artifacts and claims, and retrained every reported strategy using fold-local preprocessing and training-only model selection.
 
-No model was uniformly strongest. The downsampled baseline achieved the highest default held-out macro F1 (0.344), while the jointly tuned model achieved the highest accuracy (0.775) and Fatal F1 (0.086) at the cost of a Serious F1 of only 0.041. The interpolated-weight model offered a more balanced high-recall operating profile, recovering 55.2% of Fatal cases at default prediction, but its Fatal precision was only 3.8%. These results are not adequate for an automated severity decision system. They instead show how class weighting and threshold selection expose tradeoffs that could inform a carefully governed screening workflow when missed Fatal cases are more costly than false alerts.
+No model was uniformly strongest. The downsampled baseline achieved the highest default held-out macro F1 (0.341), while the jointly tuned model achieved the highest accuracy (0.776) and default Fatal F1 (0.086) at the cost of a Serious F1 of only 0.038. The interpolated-weight model offered a more balanced high-recall operating profile, recovering 55.0% of Fatal cases at default prediction, but its Fatal precision was only 3.7%. Applying the baseline's training-selected Fatal threshold raised held-out macro F1 to 0.351 and Fatal F1 to 0.095, although 94.2% of Fatal alerts were false positives. These results are not adequate for an automated severity decision system. They instead show how class weighting and threshold selection expose tradeoffs that could inform a carefully governed screening workflow when missed Fatal cases are more costly than false alerts.
 
 ## Problem definition and scope
 
@@ -43,13 +42,13 @@ After deduplication and complete-case cleaning, the data contains 19,039 Fatal c
 
 ![Monthly, seasonal, weekday, and hourly distributions of recorded accidents](figures/eda/temporal_distributions.png)
 
-Recorded collisions are most common in the late afternoon, with a visible peak around 17:00, and Friday has the largest weekday count (247,120). November is the highest-volume month (138,544), while autumn has the largest seasonal total. These are collision counts rather than exposure-normalized rates: differences in traffic volume could explain part of each pattern.
+Recorded collisions are most common in the late afternoon, with a visible peak around 17:00, and Friday has the largest weekday count (241,579). November is the highest-volume month (135,623), while fall has the largest seasonal total. These are collision counts rather than exposure-normalized rates: differences in traffic volume could explain part of each pattern.
 
 ### Road context and severity composition
 
 ![Severity composition by speed limit, road type, and urban or rural context](figures/eda/road_context_by_severity.png)
 
-Most recorded collisions occur at 30 mph limits (968,203; 64.4%) and on single carriageways (1,126,832; 74.9%). Rural collisions have a larger Fatal share than urban collisions (2.35% versus 0.71%), and the Fatal share is highest among well-populated speed-limit groups at 60 mph (3.14%). Collisions recorded in darkness with no street lighting also have a larger Fatal share (4.36%) than daylight collisions. These are within-collision severity proportions, not causal estimates or evidence that a setting creates more collisions per journey.
+Most recorded collisions occur at 30 mph limits (942,830; 64.1%) and on single carriageways (1,100,559; 74.9%). Rural collisions have a larger Fatal share than urban collisions (2.35% versus 0.71%), and the Fatal share is highest among well-populated speed-limit groups at 60 mph (3.14%). Collisions recorded in darkness with no street lighting also have a larger Fatal share (4.36%) than daylight collisions. These are within-collision severity proportions, not causal estimates or evidence that a setting creates more collisions per journey.
 
 ## Feature contract and leakage audit
 
@@ -81,15 +80,15 @@ The fixed weighted model retains every training observation and assigns balanced
 
 ### Tuned class-weighted XGBoost
 
-This strategy keeps fully balanced sample weights but samples 12 hyperparameter candidates deterministically. Three-fold training CV selects the candidate with the highest mean macro F1, followed by fresh five-fold validation. The winner uses 600 trees, depth 7, learning rate 0.07, subsample 0.7, column subsample 0.6, minimum child weight 5, gamma 0.1, and L2 regularization 5.
+This strategy keeps fully balanced sample weights but samples 12 hyperparameter candidates deterministically. Three-fold training CV selects the candidate with the highest mean macro F1, followed by fresh five-fold validation. The winner uses 600 trees, depth 7, learning rate 0.07, subsample 0.7, column subsample 0.6, minimum child weight 5, gamma 0.1, and L2 regularization 5. Its fresh validation macro F1 is 0.3243 ± 0.0009.
 
 ### Interpolated class-weight XGBoost
 
-Full inverse-frequency weighting may overcorrect, so this model interpolates between unit and balanced sample weights using `1 + alpha × (balanced_weight − 1)`. A coarse three-fold search over alpha from 0 to 1 is followed by a fine search around the winner. With the tuned XGBoost parameters fixed, alpha 0.90 achieves the strongest training-fold macro F1 (0.3424) and is fitted to the full training split.
+Full inverse-frequency weighting may overcorrect, so this model interpolates between unit and balanced sample weights using `1 + alpha × (balanced_weight − 1)`. A coarse three-fold search over alpha from 0 to 1 is followed by a fine search around the winner. With the tuned XGBoost parameters fixed, alpha 0.90 achieves the strongest training-fold macro F1 (0.3417) and is fitted to the full training split.
 
 ### Joint hyperparameter-and-class-weight tuned XGBoost
 
-The joint experiment samples 20 combinations of alpha and XGBoost parameters with seed 42, selects by three-fold mean macro F1, and validates the frozen winner with five fresh folds. Candidate 6 wins with alpha 0.610, 1,000 trees, depth 6, and learning rate 0.125. Joint tuning seeks a better interaction between model capacity and minority weighting than the sequential searches provide.
+The joint experiment samples 20 combinations of alpha and XGBoost parameters with seed 42, selects by three-fold mean macro F1, and validates the frozen winner with five fresh folds. Candidate 6 wins with alpha 0.610, 1,000 trees, depth 6, and learning rate 0.125; its fresh validation macro F1 is 0.3375 ± 0.0010. Joint tuning seeks a better interaction between model capacity and minority weighting than the sequential searches provide.
 
 ### Cumulative-binary ordinal XGBoost
 
@@ -105,34 +104,34 @@ The ordinal formulation uses two balanced binary models with the tuned XGBoost p
 
 | Model | Accuracy | Macro F1 | Fatal precision | Fatal recall | Fatal F1 | Serious F1 | Slight F1 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Downsampled baseline | 0.582 | **0.344** | 0.083 | 0.041 | 0.055 | **0.262** | 0.714 |
-| Fixed class-weighted | 0.540 | 0.319 | 0.033 | 0.630 | 0.063 | 0.185 | 0.708 |
-| Tuned class-weighted | 0.546 | 0.324 | 0.035 | 0.578 | 0.066 | 0.197 | 0.710 |
-| Interpolated class weight | 0.653 | 0.340 | 0.038 | 0.552 | 0.070 | 0.146 | 0.803 |
-| Joint hyperparameter and weight tuned | **0.775** | 0.337 | 0.049 | 0.380 | **0.086** | 0.041 | **0.884** |
-| Cumulative-binary ordinal | 0.652 | 0.297 | 0.032 | **0.642** | 0.061 | 0.018 | 0.812 |
+| Downsampled baseline | 0.586 | **0.341** | 0.080 | 0.030 | 0.043 | **0.262** | 0.718 |
+| Fixed class-weighted | 0.540 | 0.319 | 0.033 | 0.634 | 0.064 | 0.184 | 0.708 |
+| Tuned class-weighted | 0.544 | 0.322 | 0.034 | 0.574 | 0.065 | 0.194 | 0.708 |
+| Interpolated class weight | 0.651 | 0.339 | 0.037 | 0.550 | 0.070 | 0.145 | 0.802 |
+| Joint hyperparameter and weight tuned | **0.776** | 0.336 | 0.049 | 0.377 | **0.086** | 0.038 | **0.884** |
+| Cumulative-binary ordinal | 0.652 | 0.297 | 0.032 | **0.639** | 0.061 | 0.019 | 0.811 |
 
-The downsampled baseline has the highest default test macro F1 at 0.344 and the highest Serious F1 at 0.262, but its Fatal recall is only 4.1%. The jointly tuned model has the highest accuracy (0.775), Fatal F1 (0.086), and Slight F1 (0.884). Its accuracy comes largely from retrieving Slight cases while identifying only 2.25% of Serious cases, producing a Serious F1 of 0.041. It is therefore not a universal winner.
+The downsampled baseline has the highest default test macro F1 at 0.341 and the highest Serious F1 at 0.262, but its Fatal recall is only 3.0%. The jointly tuned model has the highest accuracy (0.776), default Fatal F1 (0.086), and Slight F1 (0.884). Its accuracy comes largely from retrieving Slight cases while identifying only 2.08% of Serious cases, producing a Serious F1 of 0.038. It is therefore not a universal winner.
 
-The interpolated-weight model is a more balanced high-recall option: it reaches 55.2% Fatal recall, 0.340 macro F1, and 0.653 accuracy. Fixed class weighting retrieves 63.0% of Fatal cases, and the ordinal model retrieves 64.2%, but their Fatal precision is approximately 3%. The ordinal model also identifies less than 1% of Serious cases. In practical terms, higher Fatal recall is obtained by labeling many non-Fatal collisions as Fatal.
+The interpolated-weight model is a more balanced high-recall option: it reaches 55.0% Fatal recall, 0.339 macro F1, and 0.651 accuracy. Fixed class weighting retrieves 63.4% of Fatal cases, and the ordinal model retrieves 63.9%, but their Fatal precision is approximately 3%. The ordinal model identifies only 1.0% of Serious cases. In practical terms, higher Fatal recall is obtained by labeling many non-Fatal collisions as Fatal.
 
 The differences among objectives are substantive: choosing by accuracy favors Slight performance, choosing by macro F1 favors the downsampled baseline, and choosing by Fatal recall favors the ordinal or fixed-weighted strategies. None combines strong precision and recall across all three classes, so deployment would require an explicit error-cost policy rather than a generic claim that one model is “best.”
 
 ## Threshold analysis and error analysis
 
-Threshold and error analysis use the downsampled baseline as a prespecified diagnostic reference, independent of which strategy ultimately leads a held-out metric. Its historical ordinary argmax predictions identify 158 of 3,888 Fatal test cases, for 4.1% recall and 8.3% precision. The historical normalized confusion matrix also shows 53.6% Serious recall and 59.8% Slight recall, illustrating that the reference model separates the classes weakly. These values remain subject to the report-wide retraining warning above.
+Threshold and error analysis use the downsampled baseline as a prespecified diagnostic reference, independent of which strategy ultimately leads a held-out metric. Its ordinary argmax predictions identify 113 of 3,808 Fatal test cases, for 3.0% recall and 8.0% precision. The normalized confusion matrix also shows 53.3% Serious recall and 60.3% Slight recall, illustrating that the reference model separates the classes weakly.
 
 ### Fatal precision–recall curve — downsampled baseline
 
 ![Fatal precision-recall curve for the downsampled baseline on the held-out test set](figures/fatal_precision_recall.png)
 
-The Fatal average precision is 0.045. The threshold of 0.27 was selected by macro F1 using five-fold out-of-fold training predictions, not the test set. Applied to held-out Fatal scores, it raises Fatal recall to 23.9% while precision falls to 6.1%.
+The Fatal average precision is 0.045. The threshold of 0.255 was selected by macro F1 using five-fold out-of-fold training predictions, not the test set. Applied to held-out Fatal scores, it raises Fatal recall to 26.6% while precision falls to 5.8%. Its held-out macro F1 is 0.351 and Fatal F1 is 0.095, both higher than any default argmax operating point in the six-model comparison; Serious F1 falls from 0.262 to 0.242.
 
 ### Fatal threshold tradeoff — downsampled baseline
 
 ![Training out-of-fold threshold tradeoff for the downsampled baseline](figures/fatal_threshold_tradeoff.png)
 
-At 0.27, 15,303 of 300,800 test observations (5.09%) trigger a Fatal alert. Of these, 929 are actual Fatal cases and 14,374 are false alerts; 2,959 Fatal cases remain missed. Thus, approximately 94% of alerts are false positives even though roughly three quarters of Fatal cases are still not retrieved. The threshold changes the operating point—it does not create new discriminatory information or make the scores calibrated.
+At 0.255, 17,435 of 293,969 test observations (5.93%) trigger a Fatal alert. Of these, 1,012 are actual Fatal cases and 16,423 are false alerts; 2,796 Fatal cases remain missed. Thus, 94.2% of alerts are false positives even though nearly three quarters of Fatal cases are still not retrieved. The threshold changes the operating point—it does not create new discriminatory information or make the scores calibrated.
 
 ### Normalized confusion matrix — downsampled baseline
 
@@ -146,13 +145,13 @@ The operational acceptability of this tradeoff cannot be decided from model metr
 
 ![Fatal-specific SHAP summary for the downsampled baseline](figures/shap_fatal.png)
 
-TreeSHAP values were computed for a deterministic sample of 2,000 held-out rows. After aggregating one-hot components back to their source fields, speed limit has the largest mean absolute Fatal SHAP value (0.388), followed by hour of day (0.211), second road class (0.210), first road class (0.136), and road type (0.117). These values rank influence on this fitted model; they do not establish causal effects of changing a road or environmental condition.
+TreeSHAP values were computed for a deterministic sample of 2,000 held-out rows. After aggregating one-hot components back to their source fields, speed limit has the largest mean absolute Fatal SHAP value (0.399), followed by second road class (0.213), hour of day (0.204), first road class (0.144), and road type (0.115). These values rank influence on this fitted model; they do not establish causal effects of changing a road or environmental condition.
 
 ### Speed-limit overlap by true severity
 
 ![Speed-limit distributions and Fatal-Serious overlap by true severity](figures/feature_distributions/speed_limit.png)
 
-The strongest model feature still overlaps substantially across true classes. Speed-limit distributions have probability-mass overlap of 0.736 between Fatal and Serious cases and 0.670 between Fatal and Slight cases. Hour-of-day overlap is still greater—0.893 for Fatal versus Serious—and road type overlap is 0.944. These shared distributions help explain why reweighting changes prediction frequency more readily than it produces clean class separation.
+The strongest model feature still overlaps substantially across true classes. Speed-limit distributions have probability-mass overlap of 0.740 between Fatal and Serious cases and 0.676 between Fatal and Slight cases. Hour-of-day overlap is still greater—0.888 for Fatal versus Serious—and road type overlap is 0.943. These shared distributions help explain why reweighting changes prediction frequency more readily than it produces clean class separation.
 
 ## Limitations, ethics, and appropriate use
 
@@ -164,7 +163,7 @@ False negatives could withhold attention from genuinely Fatal collisions; false 
 
 ## Conclusion and next steps
 
-Pre-collision road and environmental conditions contain some signal about recorded collision severity, but the six XGBoost strategies do not separate Fatal, Serious, and Slight outcomes reliably enough for automated decisions. The strongest default macro F1 is 0.344, and every attempt to retrieve more Fatal cases produces substantial false-positive costs or loses performance on Serious cases. The main result is therefore a tradeoff map, not a deployable winner.
+Pre-collision road and environmental conditions contain some signal about recorded collision severity, but the six XGBoost strategies do not separate Fatal, Serious, and Slight outcomes reliably enough for automated decisions. The strongest default macro F1 is 0.341; the baseline's training-selected Fatal threshold raises it to 0.351, but 94.2% of its Fatal alerts are false positives. Every attempt to retrieve more Fatal cases therefore produces substantial false-positive costs or loses performance on Serious cases. The main result is a tradeoff map, not a deployable winner.
 
 The next steps should be time-based validation on newer data, external validation across jurisdictions, and probability calibration performed strictly within training folds. Additional pre-collision exposure features—such as traffic volume or journey-level denominators—would be needed to address risk rather than severity conditional on a collision. Any operational evaluation should define the intervention, capacity constraints, and relative costs of missed Fatal cases, false Fatal alerts, and confusion between Serious and Slight outcomes before selecting a model or threshold.
 
@@ -175,7 +174,7 @@ The next steps should be time-based validation on newer data, external validatio
 Python 3.11 and the raw `UK_Accident.csv` file under `data/raw/` are required.
 The audited file has SHA-256 `a387b49d22a06191bcec5bc0c46c29094a62cd2c57a361b69dbdce94cc922799`.
 
-To regenerate every invalidated artifact in the required sequence, run:
+To regenerate every artifact in the required sequence, run:
 
 ```bash
 make full-retrain
@@ -245,36 +244,36 @@ All candidates use 600 trees and balanced weights. Complete precision is retaine
 
 | Candidate | Depth | Rate | Child weight | Subsample | Column sample | Gamma | L1 | L2 | CV macro F1 |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | 4 | 0.05 | 3 | 0.8 | 0.9 | 0.05 | 0.0 | 5 | 0.3175 |
-| 2 | 5 | 0.09 | 5 | 0.9 | 0.8 | 0.00 | 0.5 | 5 | 0.3211 |
-| 3 | 5 | 0.05 | 8 | 0.6 | 0.6 | 0.00 | 0.5 | 20 | 0.3200 |
-| 4 | 5 | 0.05 | 3 | 0.8 | 0.6 | 0.10 | 0.5 | 5 | 0.3198 |
-| 5 | 5 | 0.05 | 8 | 0.9 | 0.9 | 0.00 | 0.0 | 20 | 0.3198 |
+| 1 | 4 | 0.05 | 3 | 0.8 | 0.9 | 0.05 | 0.0 | 5 | 0.3179 |
+| 2 | 5 | 0.09 | 5 | 0.9 | 0.8 | 0.00 | 0.5 | 5 | 0.3208 |
+| 3 | 5 | 0.05 | 8 | 0.6 | 0.6 | 0.00 | 0.5 | 20 | 0.3195 |
+| 4 | 5 | 0.05 | 3 | 0.8 | 0.6 | 0.10 | 0.5 | 5 | 0.3196 |
+| 5 | 5 | 0.05 | 8 | 0.9 | 0.9 | 0.00 | 0.0 | 20 | 0.3197 |
 | 6 | 7 | 0.03 | 1 | 0.6 | 0.7 | 0.10 | 0.1 | 5 | 0.3239 |
-| 7 | 6 | 0.09 | 3 | 0.6 | 0.7 | 0.05 | 0.1 | 10 | 0.3229 |
-| 8 | 5 | 0.07 | 5 | 0.8 | 0.9 | 0.00 | 0.1 | 5 | 0.3210 |
-| **9** | **7** | **0.07** | **5** | **0.7** | **0.6** | **0.10** | **0.0** | **5** | **0.3254** |
+| 7 | 6 | 0.09 | 3 | 0.6 | 0.7 | 0.05 | 0.1 | 10 | 0.3227 |
+| 8 | 5 | 0.07 | 5 | 0.8 | 0.9 | 0.00 | 0.1 | 5 | 0.3207 |
+| **9** | **7** | **0.07** | **5** | **0.7** | **0.6** | **0.10** | **0.0** | **5** | **0.3250** |
 | 10 | 5 | 0.05 | 1 | 0.8 | 0.8 | 0.05 | 0.0 | 5 | 0.3201 |
-| 11 | 6 | 0.09 | 5 | 0.8 | 0.6 | 0.05 | 0.5 | 20 | 0.3226 |
+| 11 | 6 | 0.09 | 5 | 0.8 | 0.6 | 0.05 | 0.5 | 20 | 0.3222 |
 | 12 | 4 | 0.07 | 5 | 0.8 | 0.9 | 0.00 | 0.0 | 5 | 0.3184 |
 
 ### Class-weight interpolation search
 
 | Stage | Alpha | Macro F1 | Fatal precision | Fatal recall | Fatal F1 | Serious F1 | Slight F1 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Coarse | 0.00 | 0.3066 | 0.4444 | 0.0001 | 0.0003 | 0.0001 | 0.9196 |
-| Coarse | 0.20 | 0.3193 | 0.1027 | 0.0237 | 0.0385 | 0.0004 | 0.9189 |
-| Coarse | 0.40 | 0.3363 | 0.0619 | 0.1836 | 0.0926 | 0.0070 | 0.9092 |
-| Coarse | 0.60 | 0.3339 | 0.0488 | 0.3609 | 0.0860 | 0.0284 | 0.8875 |
-| Coarse | 0.80 | 0.3391 | 0.0403 | 0.4822 | 0.0744 | 0.0956 | 0.8474 |
-| Coarse | 1.00 | 0.3254 | 0.0351 | 0.5513 | 0.0659 | 0.1997 | 0.7106 |
-| Fine | 0.65 | 0.3341 | 0.0461 | 0.3944 | 0.0826 | 0.0395 | 0.8801 |
-| Fine | 0.70 | 0.3349 | 0.0440 | 0.4278 | 0.0798 | 0.0535 | 0.8714 |
-| Fine | 0.75 | 0.3366 | 0.0419 | 0.4555 | 0.0768 | 0.0722 | 0.8607 |
-| Fine | 0.80 | 0.3391 | 0.0403 | 0.4822 | 0.0744 | 0.0956 | 0.8474 |
-| Fine | 0.85 | 0.3418 | 0.0389 | 0.5048 | 0.0723 | 0.1239 | 0.8291 |
-| **Fine** | **0.90** | **0.3424** | **0.0376** | **0.5229** | **0.0701** | **0.1536** | **0.8034** |
-| Fine | 0.95 | 0.3381 | 0.0362 | 0.5374 | 0.0678 | 0.1801 | 0.7665 |
+| Coarse | 0.00 | 0.3067 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.9199 |
+| Coarse | 0.20 | 0.3177 | 0.0920 | 0.0205 | 0.0335 | 0.0004 | 0.9193 |
+| Coarse | 0.40 | 0.3368 | 0.0628 | 0.1852 | 0.0938 | 0.0070 | 0.9095 |
+| Coarse | 0.60 | 0.3343 | 0.0492 | 0.3654 | 0.0867 | 0.0286 | 0.8875 |
+| Coarse | 0.80 | 0.3394 | 0.0405 | 0.4874 | 0.0747 | 0.0965 | 0.8469 |
+| Coarse | 1.00 | 0.3250 | 0.0350 | 0.5549 | 0.0659 | 0.1980 | 0.7112 |
+| Fine | 0.65 | 0.3341 | 0.0467 | 0.4015 | 0.0837 | 0.0386 | 0.8800 |
+| Fine | 0.70 | 0.3352 | 0.0444 | 0.4346 | 0.0806 | 0.0540 | 0.8710 |
+| Fine | 0.75 | 0.3370 | 0.0424 | 0.4637 | 0.0777 | 0.0727 | 0.8605 |
+| Fine | 0.80 | 0.3394 | 0.0405 | 0.4874 | 0.0747 | 0.0965 | 0.8469 |
+| Fine | 0.85 | 0.3410 | 0.0389 | 0.5092 | 0.0723 | 0.1218 | 0.8289 |
+| **Fine** | **0.90** | **0.3417** | **0.0375** | **0.5271** | **0.0701** | **0.1513** | **0.8037** |
+| Fine | 0.95 | 0.3374 | 0.0364 | 0.5452 | 0.0682 | 0.1787 | 0.7654 |
 
 Complete standard deviations and full-precision values are available in [the interpolation results](results/xgb_weight_alpha_search.csv).
 
@@ -284,26 +283,26 @@ All candidates use 1,000 trees. Parameter and metric precision is rounded here; 
 
 | Candidate | Alpha | Depth | Rate | Child | Subsample | Columns | Gamma | L1 | L2 | Macro F1 | Fatal F1 | Serious F1 | Slight F1 |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | 0.3745 | 7 | 0.0962 | 3 | 0.9532 | 0.9828 | 0.5 | 0.0038 | 0.1360 | 0.3348 | 0.0882 | 0.0058 | 0.9104 |
-| 2 | 0.6011 | 6 | 0.1412 | 3 | 0.7565 | 0.8978 | 2.0 | 0.0047 | 0.2643 | 0.3338 | 0.0829 | 0.0324 | 0.8862 |
-| 3 | 0.5248 | 4 | 0.0576 | 8 | 0.6817 | 0.8012 | 0.0 | 3.9985 | 0.3433 | 0.3324 | 0.0920 | 0.0078 | 0.8973 |
-| 4 | 0.6184 | 5 | 0.0660 | 12 | 0.6728 | 0.7839 | 1.0 | 0.1767 | 0.2468 | 0.3308 | 0.0848 | 0.0234 | 0.8841 |
-| 5 | 0.9489 | 4 | 0.0435 | 12 | 0.8891 | 0.9880 | 0.25 | 0.0071 | 0.3586 | 0.3304 | 0.0658 | 0.1594 | 0.7660 |
-| **6** | **0.6100** | **6** | **0.1250** | **3** | **0.8320** | **0.9416** | **0.5** | **0.2823** | **0.5215** | **0.3391** | **0.0822** | **0.0518** | **0.8834** |
-| 7 | 0.5467 | 4 | 0.0953 | 3 | 0.9727 | 0.7147 | 0.25 | 2.0415 | 2.3757 | 0.3312 | 0.0901 | 0.0093 | 0.8943 |
-| 8 | 0.0885 | 7 | 0.1387 | 12 | 0.7749 | 0.7186 | 0.0 | 0.0101 | 8.0714 | 0.3107 | 0.0108 | 0.0021 | 0.9192 |
-| 9 | 0.2809 | 7 | 0.0363 | 1 | 0.7882 | 0.8399 | 0.0 | 0.0011 | 0.9425 | 0.3308 | 0.0744 | 0.0017 | 0.9164 |
-| 10 | 0.2935 | 5 | 0.0831 | 5 | 0.7755 | 0.6549 | 0.5 | 0.7127 | 0.1480 | 0.3331 | 0.0822 | 0.0011 | 0.9158 |
-| 11 | 0.1159 | 7 | 0.0390 | 5 | 0.8464 | 0.9521 | 1.0 | 0.1539 | 0.4287 | 0.3086 | 0.0063 | 0.0000 | 0.9195 |
-| 12 | 0.3829 | 4 | 0.0926 | 5 | 0.6589 | 0.9901 | 0.5 | 0.0858 | 0.9634 | 0.3361 | 0.0943 | 0.0033 | 0.9107 |
-| 13 | 0.1079 | 6 | 0.0377 | 12 | 0.9144 | 0.6610 | 0.0 | 0.0084 | 0.8796 | 0.3080 | 0.0044 | 0.0000 | 0.9195 |
-| 14 | 0.2288 | 6 | 0.0811 | 3 | 0.6869 | 0.6769 | 0.5 | 0.2039 | 0.4789 | 0.3243 | 0.0532 | 0.0015 | 0.9181 |
-| 15 | 0.4565 | 5 | 0.1208 | 3 | 0.9674 | 0.7265 | 1.0 | 0.0028 | 0.6605 | 0.3338 | 0.0955 | 0.0015 | 0.9045 |
-| 16 | 0.2721 | 3 | 0.1040 | 5 | 0.7961 | 0.8767 | 0.0 | 0.0011 | 1.4971 | 0.3306 | 0.0746 | 0.0001 | 0.9170 |
-| 17 | 0.2221 | 5 | 0.0327 | 1 | 0.7389 | 0.6920 | 1.0 | 0.0312 | 0.1410 | 0.3223 | 0.0480 | 0.0000 | 0.9188 |
-| 18 | 0.2469 | 3 | 0.0367 | 1 | 0.7939 | 0.8937 | 0.5 | 0.0097 | 17.6693 | 0.3260 | 0.0600 | 0.0000 | 0.9181 |
-| 19 | 0.0331 | 4 | 0.0324 | 12 | 0.7347 | 0.7708 | 0.0 | 0.0646 | 18.5358 | 0.3066 | 0.0003 | 0.0000 | 0.9196 |
-| 20 | 0.6721 | 7 | 0.0326 | 8 | 0.9358 | 0.9166 | 0.5 | 4.3416 | 0.8274 | 0.3314 | 0.0816 | 0.0358 | 0.8769 |
+| 1 | 0.3745 | 7 | 0.0962 | 3 | 0.9532 | 0.9828 | 0.5 | 0.0038 | 0.1360 | 0.3350 | 0.0881 | 0.0061 | 0.9107 |
+| 2 | 0.6011 | 6 | 0.1412 | 3 | 0.7565 | 0.8978 | 2.0 | 0.0047 | 0.2643 | 0.3347 | 0.0835 | 0.0343 | 0.8863 |
+| 3 | 0.5248 | 4 | 0.0576 | 8 | 0.6817 | 0.8012 | 0.0 | 3.9985 | 0.3433 | 0.3331 | 0.0932 | 0.0085 | 0.8974 |
+| 4 | 0.6184 | 5 | 0.0660 | 12 | 0.6728 | 0.7839 | 1.0 | 0.1767 | 0.2468 | 0.3319 | 0.0860 | 0.0252 | 0.8844 |
+| 5 | 0.9489 | 4 | 0.0435 | 12 | 0.8891 | 0.9880 | 0.25 | 0.0071 | 0.3586 | 0.3301 | 0.0658 | 0.1583 | 0.7662 |
+| **6** | **0.6100** | **6** | **0.1250** | **3** | **0.8320** | **0.9416** | **0.5** | **0.2823** | **0.5215** | **0.3392** | **0.0829** | **0.0513** | **0.8833** |
+| 7 | 0.5467 | 4 | 0.0953 | 3 | 0.9727 | 0.7147 | 0.25 | 2.0415 | 2.3757 | 0.3317 | 0.0913 | 0.0093 | 0.8946 |
+| 8 | 0.0885 | 7 | 0.1387 | 12 | 0.7749 | 0.7186 | 0.0 | 0.0101 | 8.0714 | 0.3098 | 0.0081 | 0.0017 | 0.9196 |
+| 9 | 0.2809 | 7 | 0.0363 | 1 | 0.7882 | 0.8399 | 0.0 | 0.0011 | 0.9425 | 0.3308 | 0.0744 | 0.0013 | 0.9168 |
+| 10 | 0.2935 | 5 | 0.0831 | 5 | 0.7755 | 0.6549 | 0.5 | 0.7127 | 0.1480 | 0.3333 | 0.0831 | 0.0007 | 0.9161 |
+| 11 | 0.1159 | 7 | 0.0390 | 5 | 0.8464 | 0.9521 | 1.0 | 0.1539 | 0.4287 | 0.3084 | 0.0054 | 0.0000 | 0.9199 |
+| 12 | 0.3829 | 4 | 0.0926 | 5 | 0.6589 | 0.9901 | 0.5 | 0.0858 | 0.9634 | 0.3362 | 0.0939 | 0.0037 | 0.9109 |
+| 13 | 0.1079 | 6 | 0.0377 | 12 | 0.9144 | 0.6610 | 0.0 | 0.0084 | 0.8796 | 0.3084 | 0.0054 | 0.0000 | 0.9199 |
+| 14 | 0.2288 | 6 | 0.0811 | 3 | 0.6869 | 0.6769 | 0.5 | 0.2039 | 0.4789 | 0.3240 | 0.0524 | 0.0013 | 0.9184 |
+| 15 | 0.4565 | 5 | 0.1208 | 3 | 0.9674 | 0.7265 | 1.0 | 0.0028 | 0.6605 | 0.3343 | 0.0959 | 0.0021 | 0.9048 |
+| 16 | 0.2721 | 3 | 0.1040 | 5 | 0.7961 | 0.8767 | 0.0 | 0.0011 | 1.4971 | 0.3314 | 0.0767 | 0.0001 | 0.9173 |
+| 17 | 0.2221 | 5 | 0.0327 | 1 | 0.7389 | 0.6920 | 1.0 | 0.0312 | 0.1410 | 0.3225 | 0.0483 | 0.0000 | 0.9191 |
+| 18 | 0.2469 | 3 | 0.0367 | 1 | 0.7939 | 0.8937 | 0.5 | 0.0097 | 17.6693 | 0.3265 | 0.0609 | 0.0000 | 0.9185 |
+| 19 | 0.0331 | 4 | 0.0324 | 12 | 0.7347 | 0.7708 | 0.0 | 0.0646 | 18.5358 | 0.3066 | 0.0000 | 0.0000 | 0.9199 |
+| 20 | 0.6721 | 7 | 0.0326 | 8 | 0.9358 | 0.9166 | 0.5 | 4.3416 | 0.8274 | 0.3321 | 0.0822 | 0.0373 | 0.8769 |
 
 ## Appendix D — Additional exploratory figures
 
@@ -345,33 +344,33 @@ All candidates use 1,000 trees. Parameter and metric precision is rounded here; 
 
 | Model | Fold | Macro F1 | Accuracy | Fatal F1 | Serious F1 | Slight F1 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Fixed class-weighted | 1 | 0.3189 | 0.5403 | 0.0635 | 0.1843 | 0.7087 |
-| Fixed class-weighted | 2 | 0.3181 | 0.5385 | 0.0625 | 0.1847 | 0.7071 |
-| Fixed class-weighted | 3 | 0.3191 | 0.5412 | 0.0644 | 0.1832 | 0.7098 |
-| Fixed class-weighted | 4 | 0.3220 | 0.5449 | 0.0655 | 0.1880 | 0.7126 |
-| Fixed class-weighted | 5 | 0.3205 | 0.5409 | 0.0639 | 0.1892 | 0.7085 |
-| Tuned class-weighted | 1 | 0.3241 | 0.5442 | 0.0663 | 0.1980 | 0.7080 |
-| Tuned class-weighted | 2 | 0.3231 | 0.5443 | 0.0653 | 0.1957 | 0.7084 |
-| Tuned class-weighted | 3 | 0.3252 | 0.5483 | 0.0672 | 0.1963 | 0.7121 |
-| Tuned class-weighted | 4 | 0.3264 | 0.5479 | 0.0668 | 0.2013 | 0.7111 |
-| Tuned class-weighted | 5 | 0.3261 | 0.5475 | 0.0664 | 0.2016 | 0.7103 |
-| Ordinal cumulative | 1 | 0.2997 | 0.6561 | 0.0618 | 0.0231 | 0.8141 |
-| Ordinal cumulative | 2 | 0.2995 | 0.6582 | 0.0606 | 0.0222 | 0.8156 |
-| Ordinal cumulative | 3 | 0.3001 | 0.6562 | 0.0617 | 0.0246 | 0.8141 |
-| Ordinal cumulative | 4 | 0.2997 | 0.6578 | 0.0615 | 0.0223 | 0.8152 |
-| Ordinal cumulative | 5 | 0.2996 | 0.6554 | 0.0614 | 0.0240 | 0.8132 |
-| Interpolated weights | 1 | 0.3418 | 0.6536 | 0.0704 | 0.1522 | 0.8030 |
-| Interpolated weights | 2 | 0.3421 | 0.6539 | 0.0694 | 0.1540 | 0.8028 |
-| Interpolated weights | 3 | 0.3432 | 0.6566 | 0.0705 | 0.1546 | 0.8045 |
-| Joint tuned | 1 | 0.3373 | 0.7753 | 0.0836 | 0.0452 | 0.8831 |
-| Joint tuned | 2 | 0.3378 | 0.7756 | 0.0819 | 0.0482 | 0.8834 |
-| Joint tuned | 3 | 0.3381 | 0.7748 | 0.0833 | 0.0481 | 0.8831 |
-| Joint tuned | 4 | 0.3381 | 0.7774 | 0.0856 | 0.0442 | 0.8846 |
-| Joint tuned | 5 | 0.3374 | 0.7757 | 0.0828 | 0.0457 | 0.8836 |
-| Downsampled baseline | 1 | 0.3380 | 0.5991 | 0.0204 | 0.2643 | 0.7294 |
-| Downsampled baseline | 2 | 0.3339 | 0.5874 | 0.0200 | 0.2632 | 0.7186 |
-| Downsampled baseline | 3 | 0.3359 | 0.5909 | 0.0215 | 0.2641 | 0.7219 |
-| Downsampled baseline | 4 | 0.3421 | 0.6038 | 0.0257 | 0.2673 | 0.7335 |
-| Downsampled baseline | 5 | 0.3366 | 0.5878 | 0.0281 | 0.2626 | 0.7190 |
+| Fixed class-weighted | 1 | 0.3186 | 0.5413 | 0.0624 | 0.1831 | 0.7103 |
+| Fixed class-weighted | 2 | 0.3182 | 0.5398 | 0.0638 | 0.1822 | 0.7085 |
+| Fixed class-weighted | 3 | 0.3203 | 0.5420 | 0.0635 | 0.1871 | 0.7104 |
+| Fixed class-weighted | 4 | 0.3207 | 0.5423 | 0.0660 | 0.1860 | 0.7102 |
+| Fixed class-weighted | 5 | 0.3193 | 0.5404 | 0.0640 | 0.1852 | 0.7087 |
+| Tuned class-weighted | 1 | 0.3237 | 0.5462 | 0.0644 | 0.1965 | 0.7102 |
+| Tuned class-weighted | 2 | 0.3234 | 0.5462 | 0.0654 | 0.1945 | 0.7102 |
+| Tuned class-weighted | 3 | 0.3240 | 0.5453 | 0.0653 | 0.1971 | 0.7095 |
+| Tuned class-weighted | 4 | 0.3255 | 0.5479 | 0.0672 | 0.1978 | 0.7114 |
+| Tuned class-weighted | 5 | 0.3249 | 0.5474 | 0.0666 | 0.1974 | 0.7108 |
+| Ordinal cumulative | 1 | 0.2992 | 0.6564 | 0.0606 | 0.0227 | 0.8144 |
+| Ordinal cumulative | 2 | 0.2996 | 0.6562 | 0.0607 | 0.0237 | 0.8143 |
+| Ordinal cumulative | 3 | 0.2999 | 0.6567 | 0.0611 | 0.0244 | 0.8144 |
+| Ordinal cumulative | 4 | 0.3002 | 0.6545 | 0.0630 | 0.0248 | 0.8128 |
+| Ordinal cumulative | 5 | 0.2997 | 0.6558 | 0.0629 | 0.0225 | 0.8137 |
+| Interpolated weights | 1 | 0.3407 | 0.6544 | 0.0688 | 0.1495 | 0.8037 |
+| Interpolated weights | 2 | 0.3411 | 0.6562 | 0.0699 | 0.1483 | 0.8050 |
+| Interpolated weights | 3 | 0.3434 | 0.6538 | 0.0715 | 0.1561 | 0.8025 |
+| Joint tuned | 1 | 0.3362 | 0.7744 | 0.0807 | 0.0450 | 0.8829 |
+| Joint tuned | 2 | 0.3369 | 0.7751 | 0.0809 | 0.0463 | 0.8835 |
+| Joint tuned | 3 | 0.3378 | 0.7751 | 0.0837 | 0.0464 | 0.8832 |
+| Joint tuned | 4 | 0.3390 | 0.7765 | 0.0849 | 0.0480 | 0.8840 |
+| Joint tuned | 5 | 0.3376 | 0.7750 | 0.0842 | 0.0455 | 0.8831 |
+| Downsampled baseline | 1 | 0.3355 | 0.5930 | 0.0185 | 0.2643 | 0.7237 |
+| Downsampled baseline | 2 | 0.3355 | 0.5948 | 0.0163 | 0.2650 | 0.7253 |
+| Downsampled baseline | 3 | 0.3331 | 0.5876 | 0.0146 | 0.2667 | 0.7181 |
+| Downsampled baseline | 4 | 0.3341 | 0.5859 | 0.0218 | 0.2634 | 0.7171 |
+| Downsampled baseline | 5 | 0.3359 | 0.5980 | 0.0156 | 0.2634 | 0.7287 |
 
 Full-precision fold metrics are available in [`cv_results.csv`](results/cv_results.csv).
