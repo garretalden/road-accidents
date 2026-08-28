@@ -50,7 +50,9 @@ The original analysis used `Number_of_Vehicles`, which describes the collision a
 
 The final model contract retains road type; first and second road class; speed limit; physical pedestrian-crossing facilities; day of week; urban/rural context; lighting; weather; and road-surface conditions. Date and time are transformed before fitting: month maps to one of four seasons, hour maps to sine and cosine components to preserve its cyclical structure, and hours 7–9 and 16–18 produce a rush-hour indicator. Categorical inputs and season are one-hot encoded, while speed limit and the engineered time fields pass through unchanged. Every transformation is fitted inside the model pipeline.
 
-Row identifiers, coordinates, road numbers, local-authority fields, police-force codes, and LSOA identifiers are excluded as identifiers or high-cardinality geographic fields. The repository does not preserve a narrower rationale for excluding `Year`, `Junction_Control`, `Pedestrian_Crossing-Human_Control`, `Special_Conditions_at_Site`, or `Carriageway_Hazards`; it records only that they are outside the current analytical feature contract. The latter two are also 97.6% and 98.2% missing, respectively. This undocumented design history is a limitation rather than a basis for inventing a retrospective justification.
+Row identifiers, coordinates, road numbers, local-authority fields, police-force codes, and LSOA identifiers are excluded as identifiers or high-cardinality geographic fields. Four excluded fields also have substantial missingness in the 1,504,150-row source file: `Carriageway_Hazards` is missing in 1,476,900 rows (98.19%), `Special_Conditions_at_Site` in 1,467,568 (97.57%), `Junction_Control` in 602,835 (40.08%), and `LSOA_of_Accident_Location` in 108,238 (7.20%). The last field is additionally a high-cardinality geographic identifier.
+
+`Pedestrian_Crossing-Human_Control` is excluded because it has almost no variation: 1,495,269 rows (99.41%) are recorded as `None within 50 metres`, while only 8,864 rows contain either of the other two recorded categories and 17 are missing. `Year` is excluded by design because it is a temporal index rather than a road or environmental condition expected to distinguish severity directly. Excluding it also reduces the opportunity for the model to rely on period-specific historical patterns that may not transfer to later data. Month and hour remain represented through the engineered season and time-of-day features because they describe recurring conditions relevant to the prediction task.
 
 ## Experimental design
 
@@ -149,7 +151,7 @@ The strongest model feature still overlaps substantially across true classes. Sp
 
 The dataset includes police-reported personal-injury collisions only. It omits uneventful journeys and therefore cannot support exposure-adjusted claims about where or when collisions are more likely. Reporting and coding practices may vary, and the nine represented years are historical and non-contiguous. There is no external or time-based validation to test geographic transfer or temporal drift.
 
-The retained features are limited to the current contract, whose rationale is incomplete for several exclusions. Geographic coordinates are not modeled, and contemporaneous weather, lighting, surface, or location-context inputs may not be known in every early-response setting. The scores are uncalibrated, and the project does not establish that a threshold transfers to a new period or agency.
+The retained features are limited to the current contract. Fields excluded for missingness may still contain information in the subset of records where they are observed, and excluding `Year` prevents the model from representing genuine temporal changes as well as discouraging reliance on non-transferable period effects. Geographic coordinates are not modeled, and contemporaneous weather, lighting, surface, or location-context inputs may not be known in every early-response setting. The scores are uncalibrated, and the project does not establish that a threshold transfers to a new period or agency.
 
 False negatives could withhold attention from genuinely Fatal collisions; false positives could overwhelm responders, delay other work, or create inequitable resource allocation if model errors vary across places or populations. Given the low precision and incomplete validation, the models should not autonomously determine severity or allocate emergency services. At most, they provide evidence for designing a prospective, human-supervised screening study with monitoring and an explicit cost function.
 
@@ -204,7 +206,9 @@ The joint search is intentionally separate from `make train-all`; it must finish
 | Row or collision identifiers | `Unnamed: 0`, `Accident_Index` |
 | Geographic coordinates | `Location_Easting_OSGR`, `Location_Northing_OSGR`, `Longitude`, `Latitude` |
 | High-cardinality geographic or administrative identifiers | `Police_Force`, `Local_Authority_(District)`, `Local_Authority_(Highway)`, `1st_Road_Number`, `2nd_Road_Number`, `LSOA_of_Accident_Location` |
-| Outside current contract; narrower rationale not documented | `Year`, `Junction_Control`, `Pedestrian_Crossing-Human_Control`, `Special_Conditions_at_Site`, `Carriageway_Hazards` |
+| Substantial missingness | `Junction_Control` (40.08%), `Special_Conditions_at_Site` (97.57%), `Carriageway_Hazards` (98.19%), `LSOA_of_Accident_Location` (7.20%; also a high-cardinality geographic identifier) |
+| Near-zero variation | `Pedestrian_Crossing-Human_Control` (99.41% recorded as `None within 50 metres`) |
+| Temporal index outside the intended condition-based feature contract | `Year` |
 
 ## Appendix C — Hyperparameters and tuning candidates
 
