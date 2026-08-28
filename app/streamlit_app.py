@@ -35,6 +35,11 @@ def categories(model, column: str) -> list:
 def main() -> None:
     st.title("UK road-accident severity")
     st.caption("Predictions from static context and contemporaneous conditions")
+    st.warning(
+        "Educational portfolio demo only. This model estimates severity conditional on a "
+        "reported collision; it does not predict whether a collision will occur. Scores are "
+        "uncalibrated and must not guide emergency response or other operational decisions."
+    )
     relative_model = os.environ.get("ROAD_ACCIDENT_MODEL", DEFAULT_MODEL_ARTIFACT)
     model_path = PROJECT_ROOT / relative_model
     if not model_path.exists():

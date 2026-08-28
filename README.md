@@ -1,5 +1,7 @@
 # UK Road Accident Severity
 
+[![CI](https://github.com/garretalden/road-accidents/actions/workflows/ci.yml/badge.svg)](https://github.com/garretalden/road-accidents/actions/workflows/ci.yml)
+
 An end-to-end machine-learning study of whether a reported UK road collision
 will be **Fatal**, **Serious**, or **Slight**, using only information available
 at prediction time. The project emphasizes rare-class evaluation, leakage-safe
